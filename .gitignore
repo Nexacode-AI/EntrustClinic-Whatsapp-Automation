@@ -11,3 +11,4 @@ build/
 *.pdf
 temp/
 uploads/
+package-lock.json
