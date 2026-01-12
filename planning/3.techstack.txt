@@ -1,0 +1,58 @@
+Tech Stack for MediBot-AI- WhatsApp Clinic Booking System
+
+Core Components
+WhatsApp Integration
+
+
+Twilio WhatsApp API or Meta WhatsApp Business API (officially supported)
+Why: Production-ready, reliable message delivery, supports media/buttons
+Backend Server
+
+
+Node.js + Express.js 
+Why: Handles webhooks, conversation state, business logic
+Calendar Management
+
+
+Google Calendar API (primary choice)
+Why: Free, reliable, easy integration, automatic reminders
+Database
+
+
+PostgreSQL 
+Why: Store conversation history, patient records, appointment metadata
+Spreadsheet Integration
+
+
+Google Sheets API (for real-time reporting)
+Why: Easy analytics, shareable with clinic staff, no extra dashboard needed
+Task Scheduling
+
+
+Node-cron (for Node.js) 
+Why: Handles automated reminders, follow-ups
+PDF Generation
+
+
+PDFKit (Node.js) 
+Why: Generate appointment receipts/confirmations
+Hosting
+
+
+Railway.app, Render, or AWS EC2
+Why: Easy deployment, affordable, supports webhooks
+System Architecture
+
+WhatsApp User
+    ↓
+Twilio/Meta WhatsApp API (Webhook)
+    ↓
+Node.js Server (Express.js)
+    ↓
+├─→ Google Calendar API (check/book slots)
+├─→ PostgreSQL DB (store patient data, chat logs)
+├─→ Google Sheets API (export bookings)
+├─→ PDF Generator (create receipts)
+└─→ Cron Jobs (reminders, follow-ups)
+
+

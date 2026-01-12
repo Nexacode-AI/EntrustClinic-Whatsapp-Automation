@@ -1,0 +1,186 @@
+​​🏥 Clinic Appointment Booking: System Design
+
+User: Hi
+Bot: Welcome to [Clinic Name]! 👋
+     I'm here to help you book an appointment.
+     
+     Which department would you like to consult?
+     1️⃣ Dental Care
+     2️⃣ Dermatology (Skin Care)
+     3️⃣ General Consultation
+     
+User: 1
+Bot: Great! Here are our dental specialists:
+     
+     1️⃣ Dr. Sarah Johnson - Orthodontist
+     2️⃣ Dr. Mike Chen - General Dentistry
+     3️⃣ Dr. Priya Sharma - Cosmetic Dentistry
+     
+User: 1
+Bot: When would you like to book your appointment?
+     Please select a date:
+     
+     📅 Next available slot (soonest)
+     📅 This week (Jan 12-18)
+     📅 Choose another date
+     
+User: Tomorrow
+Bot: Checking availability for Dr. Sarah Johnson on Jan 13...
+     
+     ✅ Available time slots:
+     1️⃣ 09:00 AM - 09:30 AM
+     2️⃣ 10:00 AM - 10:30 AM
+     3️⃣ 02:30 PM - 03:00 PM
+     4️⃣ 04:00 PM - 04:30 PM
+     
+ 
+// If NO slots available:
+Bot: ⚠️ Unfortunately, Dr. Sarah Johnson has no available slots on Jan 12.
+     
+     Would you like to:
+     1️⃣ Check another date
+     2️⃣ See another doctor's availability
+     3️⃣ Add yourself to waitlist (we'll notify if slot opens)
+
+Patient Information Collection
+
+Bot: Perfect! Let me collect some details:
+     
+     📝 Full Name:
+User: John Doe
+
+Bot: 📞 Contact Number:
+User: +94771234567
+
+Bot: 📧 Email Address:
+User: john@example.com
+
+Bot: 🆔 National ID / Passport (for records):
+User: 991234567V
+
+Bot: 📋 Brief reason for consultation:
+User: Tooth pain
+
+ 
+
+
+
+
+
+🎫 Appointment Confirmation & Receipt Generation (Multi-Channel Confirmation)
+
+
+1. WhatsApp Confirmation Message:
+
+✅ Appointment Confirmed!
+
+━━━━━━━━━━━━━━━━━━━━
+📋 APPOINTMENT DETAILS
+━━━━━━━━━━━━━━━━━━━━
+
+👤 Patient: John Doe
+🏥 Department: Dental Care
+👨‍⚕️ Doctor: Dr. Sarah Johnson
+📅 Date: January 12, 2026
+🕐 Time: 10:00 AM - 10:30 AM
+📍 Location: [Clinic Address]
+
+🎟️ Booking ID: APT-20260112-001
+
+━━━━━━━━━━━━━━━━━━━━
+📌 IMPORTANT NOTES
+━━━━━━━━━━━━━━━━━━━━
+
+- Please arrive 10 minutes early
+- Bring your medical records
+- Cancel at least 2 hours in advance
+
+Need to reschedule? Reply "RESCHEDULE"
+Need to cancel? Reply "CANCEL"
+
+📧 Digital receipt sent to: john@example.com
+📲 Calendar invite sent!
+
+Post-Booking Automation
+⏰ Automated Reminder (T-24 Hours)
+"Reminder: You have an appointment tomorrow with Dr. Silva at 10:30 AM. Reply YES to confirm or NO to cancel." 
+(If NO →Free the slot automatically)
+⭐ Post-Appointment Follow-Up (Next Morning)
+"😊 Hello [Patient Name], how are you feeling after your appointment yesterday?"
+🚨 Emergency Escalation
+Keywords Trigger: pain, bleeding, fever, swelling, serious
+System Action: Interrupt flow and send:
+“⚠️ This may require urgent attention. 📞 Please call our emergency line immediately: 021xxxxxxx”
+If positive → "Glad to hear! If anything changes, reach us at 021xxxxxxx"
+
+
+
+
+
+
+
+
+
+
+
+
+
+SERVER (Real-time Chat) - User Interacting
+
+10:30 AM - User: "Hi"
+           ↓
+         SERVER receives message (WhatsApp webhook)
+           ↓
+         SERVER: "Welcome! Which department?"
+           ↓
+10:31 AM - User: "Dental"
+           ↓
+         SERVER: "Choose doctor: 1) Dr. Sarah 2) Dr. Mike"
+           ↓
+10:32 AM - User: "1"
+           ↓
+         SERVER: Checks Google Calendar
+           ↓
+         SERVER: "Available slots: 9 AM, 10 AM, 2 PM"
+           ↓
+10:33 AM - User: "9 AM"
+           ↓
+         SERVER: Books appointment
+           ↓
+         SERVER: "✅ Booked for tomorrow 9 AM!"
+
+
+
+
+
+
+
+
+
+
+
+
+CRON JOBS (Scheduled Tasks) - No User Input
+
+Next Day:
+
+9:00 AM (Today) - CRON JOB #1 runs automatically
+                  ↓
+                Checks: "Any appointments in 24 hours?"
+                  ↓
+                Finds: User's appointment tomorrow at 9 AM
+                  ↓
+                Sends WhatsApp: "Reminder: Appointment tomorrow at 9 AM"
+                  ↓
+                (User doesn't need to do anything)
+
+10:00 AM (Day after appointment) - CRON JOB #2 runs automatically
+                                    ↓
+                                  Checks: "Any appointments yesterday?"
+                                    ↓
+                                  Finds: User had appointment yesterday
+                                    ↓
+                                  Sends WhatsApp: "Hi! How are you feeling?"
+                                    ↓
+                                  (Automatic - no trigger needed)
+

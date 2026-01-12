@@ -1,0 +1,141 @@
+Here is your updated **MediBot-AI Development & Integration Roadmap**. I have integrated the LLM-specific components into the structured format while maintaining the strict context of your plan.
+
+---
+
+## 🏥 MEDIBOT-AI - DEVELOPMENT & INTEGRATION ROADMAP
+
+### Phase 1: Core Setup & Communication (Weeks 1-2)
+
+* [ ] **Foundation Setup**
+* [ ] Project scaffolding (Node.js + Express setup)
+* [ ] Environment variables & configuration (Dotenv)
+* [ ] Database setup (PostgreSQL schema creation)
+* [ ] Logging system (Winston/Pino)
+
+
+* [ ] **WhatsApp Integration**
+* [ ] Twilio/Meta WhatsApp API account setup
+* [ ] Webhook endpoint creation & verification
+* [ ] Basic message send/receive functionality
+* [ ] Interactive button menus implementation
+* [ ] Department selection flow (Dental, Dermatology, General)
+* [ ] State management system (session tracking)
+
+
+* [ ] **LLM Integration (Optional)**
+* [ ] LLM API setup (OpenAI/Claude/Ollama)
+* [ ] LLM configuration & authentication
+
+
+
+### Phase 2: Calendar & Scheduling Engine (Weeks 3-5)
+
+* [ ] **Google Calendar Integration**
+* [ ] Service Account authentication
+* [ ] Calendar API webhook connection
+* [ ] Fetch available doctor schedules
+* [ ] Read existing bookings & blocked times
+
+
+* [ ] **Slot Generation & Availability Logic**
+* [ ] Dynamic slot generation (30-min intervals)
+* [ ] Clinic hours filtering (e.g., 9 AM - 5 PM)
+* [ ] Doctor-specific availability logic
+* [ ] "No slots available" flow & waitlist logic
+* [ ] Real-time availability checking
+
+
+* [ ] **Intelligent Logic (Optional)**
+* [ ] LLM-based symptom analysis integration
+* [ ] Intelligent department/doctor recommendation based on symptoms
+
+
+* [ ] **Booking Engine**
+* [ ] Appointment confirmation logic
+* [ ] Calendar event creation (insert into doctor's calendar)
+* [ ] Booking ID generation
+* [ ] Conflict detection & handling
+
+
+
+### Phase 3: Data Capture & Receipts (Weeks 6-7)
+
+* [ ] **Patient Data Collection**
+* [ ] Multi-field form flow (Name, Phone, Email, ID, Reason)
+* [ ] Input validation (email, phone, national ID)
+* [ ] Data sanitization & storage in PostgreSQL
+* [ ] Patient profile creation
+
+
+* [ ] **NLP Data Enhancement (Optional)**
+* [ ] LLM-powered symptom clarification & info extraction
+* [ ] Natural language processing for medical history
+
+
+* [ ] **Receipt & Reporting**
+* [ ] PDF receipt generation (PDFKit)
+* [ ] Receipt template design (logo, booking details, instructions)
+* [ ] Send PDF via WhatsApp
+* [ ] Google Sheets API integration for data export
+* [ ] Real-time booking report generation
+
+
+
+### Phase 4: Automation & Follow-ups (Weeks 8-10)
+
+* [ ] **Reminder System**
+* [ ] Node-cron job scheduler setup
+* [ ] T-24 hour reminder triggers
+* [ ] Reminder message templates
+* [ ] Delivery confirmation logging
+
+
+* [ ] **Post-Appointment Follow-ups**
+* [ ] T+24 hour follow-up message system
+* [ ] Customized message templates ("How are you feeling?")
+* [ ] Feedback collection mechanism
+
+
+* [ ] **Emergency Detection**
+* [ ] Keyword detection system (pain, bleeding, fever, urgent)
+* [ ] Emergency flow interruption
+* [ ] Auto-send emergency contact number
+* [ ] Alert clinic staff (optional: Slack/Email notification)
+
+
+* [ ] **Advanced Detection (Optional)**
+* [ ] LLM-powered contextual emergency detection
+* [ ] Severity assessment using natural language understanding
+
+
+
+### Phase 5: Advanced Features & Management (Weeks 11-12)
+
+* [ ] **Cancellation & Rescheduling**
+* [ ] Cancel appointment flow (free up calendar slot)
+* [ ] Reschedule appointment logic
+* [ ] Confirmation of changes
+* [ ] Calendar event deletion/modification
+
+
+* [ ] **Testing, Deployment & Documentation**
+* [ ] End-to-end testing (happy path & edge cases)
+* [ ] Load testing (multiple concurrent users)
+* [ ] Security audit (input validation, API keys)
+* [ ] Deployment to Railway/Render/AWS
+* [ ] Documentation & handover guide
+
+
+
+---
+
+### 📊 Project Effort Summary
+
+* **Base Development:** ~200 hours
+* **LLM Integration:** ~27 hours
+* **Testing & Deployment:** ~45 hours
+* **Total Estimated Effort:** **~272 hours**
+
+### 🚀 Next Step
+
+Since you’ve added LLM features, would you like to discuss the **Prompt Engineering strategy** for the "Symptom Analysis" part, or should we stick to the **Phase 1 Database setup**?
