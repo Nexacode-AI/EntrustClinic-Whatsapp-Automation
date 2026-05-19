@@ -1,0 +1,38 @@
+name: Deploy Health Check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Verify deployable state
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check backend dependencies resolve
+        working-directory: backend
+        run: npm ci --ignore-scripts
+
+      - name: Check dashboard dependencies resolve
+        working-directory: dashboard
+        run: npm ci --ignore-scripts
+
+      - name: Verify .env.example files exist
+        run: |
+          test -f backend/.env.example && echo "backend/.env.example OK"
+          test -f dashboard/.env.example && echo "dashboard/.env.example OK"
+
+      - name: Verify database schema files exist
+        run: |
+          test -f backend/database/schema.sql && echo "schema.sql OK"
+          test -f backend/database/schema_doctors.sql && echo "schema_doctors.sql OK"
+          test -f backend/database/schema_patch_v2.sql && echo "schema_patch_v2.sql OK"
