@@ -5,7 +5,9 @@ import { logger } from './config/logger.js'
 import { startScheduler } from './services/scheduler.js'
 import { mkdir } from 'fs/promises'
 
-await mkdir('logs', { recursive: true })
+if (env.nodeEnv !== 'production') {
+  await mkdir('logs', { recursive: true })
+}
 
 startScheduler()
 

@@ -35,14 +35,17 @@ export async function resolveEscalation(req, res) {
   const { phone } = req.params
   const { resolved_by } = req.body
 
-  await Promise.all([
-    db.from('conversations').update({ is_escalated: false, state: 'IDLE' }).eq('phone', phone),
-    db.from('escalations').update({
-      resolved: true,
-      resolved_by: resolved_by || 'staff',
-      resolved_at: new Date().toISOString(),
-    }).eq('phone', phone).eq('resolved', false),
-  ])
-
-  res.json({ ok: true })
+  try {
+    await Promise.all([
+      db.from('conversations').update({ is_escalated: false, state: 'IDLE' }).eq('phone', phone),
+      db.from('escalations').update({
+        resolved: true,
+        resolved_by: resolved_by || 'staff',
+        resolved_at: new Date().toISOString(),
+      }).eq('phone', phone).eq('resolved', false),
+    ])
+    res.json({ ok: true })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 }

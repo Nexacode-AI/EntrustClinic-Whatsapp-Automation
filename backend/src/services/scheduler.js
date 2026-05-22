@@ -52,6 +52,16 @@ async function sendPendingReminders() {
       : t('reminder1h', lang, d)
 
     try {
+      // Atomically claim the reminder — prevents double-send if two instances run concurrently
+      const { data: claimed } = await db
+        .from('reminders')
+        .update({ sent: true, sent_at: now })
+        .eq('id', reminder.id)
+        .eq('sent', false)
+        .select('id')
+
+      if (!claimed || claimed.length === 0) continue
+
       await sendMessage(patient.phone, message)
 
       // Track which appointment the reminder was for (for reply handling)
@@ -59,7 +69,6 @@ async function sendPendingReminders() {
         last_reminder_appointment_id: appt.id,
       }).eq('phone', patient.phone)
 
-      await db.from('reminders').update({ sent: true, sent_at: now }).eq('id', reminder.id)
       logger.info(`Reminder sent: ${reminder.type} to ${patient.phone}`)
     } catch (err) {
       logger.error('Scheduler: send reminder error', { error: err.message, phone: patient.phone })
@@ -106,11 +115,20 @@ async function sendPendingFollowUps() {
     const message = t('followUp', lang, patient.name || 'there')
 
     try {
+      // Atomically claim the follow-up
+      const { data: claimed } = await db
+        .from('follow_ups')
+        .update({ sent: true, sent_at: now })
+        .eq('id', fu.id)
+        .eq('sent', false)
+        .select('id')
+
+      if (!claimed || claimed.length === 0) continue
+
       await sendMessage(patient.phone, message)
 
       // Set conversation state to AWAITING_RATING
       await db.from('conversations').update({ state: 'AWAITING_RATING' }).eq('phone', patient.phone)
-      await db.from('follow_ups').update({ sent: true, sent_at: now }).eq('id', fu.id)
 
       logger.info(`Follow-up sent to ${patient.phone}`)
     } catch (err) {

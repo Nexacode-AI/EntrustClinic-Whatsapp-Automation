@@ -67,7 +67,10 @@ export async function updateDoctor(req, res) {
 
 export async function deleteDoctor(req, res) {
   const { error } = await db.from('doctors').delete().eq('id', req.params.id)
-  if (error) return res.status(500).json({ error: error.message })
+  if (error) {
+    if (error.code === '23503') return res.status(409).json({ error: 'Doctor has existing appointments and cannot be deleted.' })
+    return res.status(500).json({ error: error.message })
+  }
   logger.info('Doctor deleted', { id: req.params.id })
   res.status(204).send()
 }

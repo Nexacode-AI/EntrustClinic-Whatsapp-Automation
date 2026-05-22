@@ -1,9 +1,3 @@
-/**
- * Conversation state machine — patients and doctors.
- *
- * Patients : fully structured menu flow. LLM used ONLY for rating interpretation.
- * Doctors  : recognised by phone number → see their own schedule, no LLM at all.
- */
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat.js'
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore.js'
@@ -20,7 +14,6 @@ import { logger } from '../config/logger.js'
 // ─── States ───────────────────────────────────────────────────────────────────
 
 export const STATES = {
-  // Patient states
   IDLE: 'IDLE',
   AWAITING_LANGUAGE: 'AWAITING_LANGUAGE',
   AWAITING_NAME: 'AWAITING_NAME',
@@ -37,15 +30,13 @@ export const STATES = {
   AWAITING_RATING: 'AWAITING_RATING',
   FAQ_MENU: 'FAQ_MENU',
   ESCALATED: 'ESCALATED',
-  // Doctor states
   DOCTOR_MENU: 'DOCTOR_MENU',
   DOCTOR_AWAITING_DATE: 'DOCTOR_AWAITING_DATE',
 }
 
-// ─── Message Templates ────────────────────────────────────────────────────────
+// ─── Message Templates (text fallbacks) ──────────────────────────────────────
 
 export const T = {
-  // Shown before language is known — all three languages in one message
   languageMenu: {
     en: () =>
       `Welcome to *${env.clinic.name}*! 👋\n\nPlease choose your language:\nSila pilih bahasa anda:\n请选择您的语言：\n\n1️⃣ English\n2️⃣ Bahasa Malaysia\n3️⃣ 中文 (Chinese)`,
@@ -253,6 +244,13 @@ const SERVICES = [
   'Wound Care',
 ]
 
+// Localized service names for interactive list display (IDs stay numeric → SERVICES[id-1])
+const SERVICES_DISPLAY = {
+  en: SERVICES,
+  ms: ['Konsultasi Umum', 'Susulan', 'Ujian Darah (Berpuasa)', 'Ujian Darah (Tidak Berpuasa)', 'FOMEMA', 'FOMEMA X-Ray', 'Saringan Kesihatan', 'Vaksinasi', 'Antenatal / Postnatal', 'Pap Smear', 'Penjagaan Luka'],
+  zh: ['普通看诊', '复诊', '血液检验（空腹）', '血液检验（非空腹）', 'FOMEMA', 'FOMEMA X光', '健康检查', '疫苗接种', '产前/产后随访', '子宫颈抹片', '伤口护理'],
+}
+
 function parseServiceSelection(text) {
   const n = parseInt(text)
   if (!isNaN(n) && n >= 1 && n <= SERVICES.length) return SERVICES[n - 1]
@@ -263,6 +261,232 @@ function parseServiceSelection(text) {
 async function getServiceIdByName(name) {
   const { data } = await db.from('services').select('id').eq('name', name).single()
   return data?.id || null
+}
+
+// ─── Interactive Message Builders ─────────────────────────────────────────────
+
+const BTN = {
+  yes:          { en: 'Yes, Confirm',      ms: 'Ya, Sahkan',        zh: '是，确认' },
+  no:           { en: 'No, Cancel',        ms: 'Tidak',             zh: '否，取消' },
+  keepAppt:     { en: 'Keep Appointment',  ms: 'Simpan Temujanji',  zh: '保留预约' },
+  bookAppt:     { en: 'Book Appointment',  ms: 'Tempah Temujanji',  zh: '预约挂号' },
+  myAppt:       { en: 'My Appointment',    ms: 'Temujanji Saya',    zh: '我的预约' },
+  helpFaq:      { en: 'Help / FAQ',        ms: 'Bantuan / FAQ',     zh: '帮助/FAQ' },
+  reschedule:   { en: 'Reschedule',        ms: 'Jadual Semula',     zh: '重新安排' },
+  cancelAppt:   { en: 'Cancel',            ms: 'Batal',             zh: '取消预约' },
+  backMenu:     { en: 'Back to Menu',      ms: 'Menu Utama',        zh: '返回菜单' },
+  noPreference: { en: 'No Preference',     ms: 'Tiada Pilihan',     zh: '无偏好' },
+  selectSvc:    { en: 'Select Service',    ms: 'Pilih Servis',      zh: '选择服务' },
+  pickTime:     { en: 'Pick a Time',       ms: 'Pilih Masa',        zh: '选择时间' },
+  select:       { en: 'Select',            ms: 'Pilih',             zh: '选择' },
+  bookNow:      { en: 'Book Now',          ms: 'Tempah Sekarang',   zh: '立即预约' },
+}
+
+function b(lang, key) {
+  return (BTN[key]?.[lang] || BTN[key]?.en || '').slice(0, 20)
+}
+
+function btnMsg(bodyText, btns) {
+  return {
+    type: 'button',
+    body: { text: bodyText },
+    action: { buttons: btns.map((btn) => ({ type: 'reply', reply: { id: btn.id, title: btn.title.slice(0, 20) } })) },
+  }
+}
+
+// sections: [{ title: string, rows: [{ id, title }] }]
+function listMsg(bodyText, buttonLabel, sections) {
+  return {
+    type: 'list',
+    body: { text: bodyText },
+    action: {
+      button: buttonLabel.slice(0, 20),
+      sections: sections.map((sec) => ({
+        title: sec.title.slice(0, 24),
+        rows: sec.rows.map((r) => ({ id: r.id, title: String(r.title).slice(0, 24) })),
+      })),
+    },
+  }
+}
+
+function iLanguageMenu() {
+  const body = `Welcome to *${env.clinic.name}*! 👋\n\nPlease choose your language / Sila pilih bahasa / 请选择：`
+  return btnMsg(body, [
+    { id: '1', title: 'English' },
+    { id: '2', title: 'Bahasa Malaysia' },
+    { id: '3', title: '中文 (Chinese)' },
+  ])
+}
+
+const MAIN_MENU_BODY = {
+  en: (name) => `Hi${name ? ` ${name}` : ''}! 👋 How can I help you today?`,
+  ms: (name) => `Hi${name ? ` ${name}` : ''}! 👋 Boleh saya bantu anda hari ini?`,
+  zh: (name) => `您好${name ? `，${name}` : ''}！👋 今天有什么可以帮您？`,
+}
+
+function iMainMenu(lang, name) {
+  const l = lang || 'en'
+  const body = (MAIN_MENU_BODY[l] || MAIN_MENU_BODY.en)(name)
+  return btnMsg(body, [
+    { id: '1', title: b(l, 'bookAppt') },
+    { id: '2', title: b(l, 'myAppt') },
+    { id: '3', title: b(l, 'helpFaq') },
+  ])
+}
+
+function iServiceList(lang, name) {
+  const l = lang || 'en'
+  const bodies = {
+    en: `Nice to meet you${name ? `, ${name}` : ''}! 😊\n\nWhich service do you need?`,
+    ms: `Selamat berkenalan${name ? `, ${name}` : ''}! 😊\n\nPerkhidmatan apa yang anda perlukan?`,
+    zh: `很高兴认识您${name ? `，${name}` : ''}！😊\n\n您需要哪项服务？`,
+  }
+  // WhatsApp lists max 10 rows per section — split 11 services into 2 sections
+  const sec1Titles = { en: 'Consultations', ms: 'Perundingan', zh: '看诊类' }
+  const sec2Titles = { en: 'Other Services', ms: 'Perkhidmatan Lain', zh: '其他服务' }
+  const displayNames = SERVICES_DISPLAY[l] || SERVICES
+  const section1Rows = displayNames.slice(0, 6).map((s, i) => ({ id: String(i + 1), title: s }))
+  const section2Rows = displayNames.slice(6).map((s, i) => ({ id: String(i + 7), title: s }))
+  return listMsg(bodies[l] || bodies.en, b(l, 'selectSvc'), [
+    { title: sec1Titles[l] || sec1Titles.en, rows: section1Rows },
+    { title: sec2Titles[l] || sec2Titles.en, rows: section2Rows },
+  ])
+}
+
+function iDoctorMenu(lang, doctors) {
+  const l = lang || 'en'
+  const bodies = {
+    en: 'Which doctor do you prefer?',
+    ms: 'Doktor mana yang anda pilih?',
+    zh: '您希望选择哪位医生？',
+  }
+  const body = bodies[l] || bodies.en
+  const noPreferenceId = String(doctors.length + 1)
+  const allRows = [
+    ...doctors.map((d, i) => ({ id: String(i + 1), title: d.name })),
+    { id: noPreferenceId, title: b(l, 'noPreference') },
+  ]
+
+  if (doctors.length <= 2) {
+    return btnMsg(body, allRows)
+  }
+  const sectionTitles = { en: 'Available Doctors', ms: 'Doktor Tersedia', zh: '可选医生' }
+  return listMsg(body, b(l, 'select'), [{ title: sectionTitles[l] || sectionTitles.en, rows: allRows }])
+}
+
+function iSlotList(lang, dateLabel, slots) {
+  const l = lang || 'en'
+  const bodies = {
+    en: `Available slots on *${dateLabel}*:`,
+    ms: `Slot tersedia pada *${dateLabel}*:`,
+    zh: `*${dateLabel}* 可用时段：`,
+  }
+  // WhatsApp max 10 rows per section — split by time of day
+  const morningTitles   = { en: 'Morning (9 AM - 12 PM)',   ms: 'Pagi (9 PG - 12 TGH)',  zh: '上午 (9:00 - 12:00)' }
+  const afternoonTitles = { en: 'Afternoon (12 - 5 PM)',    ms: 'Petang (12 - 5 PM)',     zh: '下午 (12:00 - 17:00)' }
+  const eveningTitles   = { en: 'Evening (5 - 9 PM)',       ms: 'Malam (5 - 9 PM)',       zh: '傍晚 (17:00 - 21:00)' }
+
+  function slotTitle(s) {
+    const [h, m] = s.split(':').map(Number)
+    const period = h < 12 ? 'AM' : 'PM'
+    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+    return `${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`
+  }
+
+  let idx = 1
+  const sections = []
+  const morning   = slots.filter((s) => s < '12:00')
+  const afternoon = slots.filter((s) => s >= '12:00' && s < '17:00')
+  const evening   = slots.filter((s) => s >= '17:00')
+
+  if (morning.length)   sections.push({ title: morningTitles[l]   || morningTitles.en,   rows: morning.map((s)   => ({ id: String(idx++), title: slotTitle(s) })) })
+  if (afternoon.length) sections.push({ title: afternoonTitles[l] || afternoonTitles.en, rows: afternoon.map((s) => ({ id: String(idx++), title: slotTitle(s) })) })
+  if (evening.length)   sections.push({ title: eveningTitles[l]   || eveningTitles.en,   rows: evening.map((s)   => ({ id: String(idx++), title: slotTitle(s) })) })
+
+  return listMsg(bodies[l] || bodies.en, b(l, 'pickTime'), sections)
+}
+
+function iConfirm(lang, bodyText) {
+  const l = lang || 'en'
+  return btnMsg(bodyText, [
+    { id: 'yes', title: b(l, 'yes') },
+    { id: 'no', title: b(l, 'no') },
+  ])
+}
+
+function iCancelConfirm(lang, bodyText) {
+  const l = lang || 'en'
+  return btnMsg(bodyText, [
+    { id: 'yes', title: b(l, 'yes') },
+    { id: 'no', title: b(l, 'keepAppt') },
+  ])
+}
+
+function iBookedOptions(lang, bodyText) {
+  const l = lang || 'en'
+  return btnMsg(bodyText, [
+    { id: '1', title: b(l, 'reschedule') },
+    { id: '2', title: b(l, 'cancelAppt') },
+    { id: '3', title: b(l, 'backMenu') },
+  ])
+}
+
+const FAQ_ROWS = {
+  en: [
+    { id: '1', title: 'Opening hours' },
+    { id: '2', title: 'Location & directions' },
+    { id: '3', title: 'Our services' },
+    { id: '4', title: 'About appointments' },
+    { id: '5', title: 'Talk to our staff' },
+    { id: '0', title: 'Back to main menu' },
+  ],
+  ms: [
+    { id: '1', title: 'Waktu operasi' },
+    { id: '2', title: 'Lokasi & arah' },
+    { id: '3', title: 'Perkhidmatan kami' },
+    { id: '4', title: 'Tentang temujanji' },
+    { id: '5', title: 'Bercakap dengan staf' },
+    { id: '0', title: 'Kembali ke menu' },
+  ],
+  zh: [
+    { id: '1', title: '营业时间' },
+    { id: '2', title: '地址及交通' },
+    { id: '3', title: '我们的服务' },
+    { id: '4', title: '关于预约' },
+    { id: '5', title: '联系员工' },
+    { id: '0', title: '返回主菜单' },
+  ],
+}
+
+const FAQ_SECTION = { en: 'Help Topics', ms: 'Topik Bantuan', zh: '帮助主题' }
+
+function iFaqMenu(lang, bodyText) {
+  const l = lang || 'en'
+  return listMsg(bodyText, b(l, 'select'), [{ title: FAQ_SECTION[l] || FAQ_SECTION.en, rows: FAQ_ROWS[l] || FAQ_ROWS.en }])
+}
+
+// Shows the next 7 days as a tappable list. Row ID = YYYY-MM-DD so parseDate() handles it directly.
+function iDateList(lang) {
+  const l = lang || 'en'
+  const bodies = {
+    en: 'Which date would you like?\n\nTap a date below, or type any date (e.g. *25 May*)',
+    ms: 'Tarikh apa yang anda inginkan?\n\nKetik tarikh di bawah atau taip (cth: *25 Mei*)',
+    zh: '您希望哪天预约？\n\n点击下方日期，或直接输入（如：*25 May*）',
+  }
+  const sectionTitles = { en: 'Upcoming Dates', ms: 'Tarikh Akan Datang', zh: '即将到来的日期' }
+  const dayNames0 = { en: 'Today', ms: 'Hari ini', zh: '今天' }
+  const dayNames1 = { en: 'Tomorrow', ms: 'Esok', zh: '明天' }
+
+  const today = dayjs()
+  const rows = Array.from({ length: 7 }, (_, i) => {
+    const d = today.add(i, 'day')
+    const prefix = i === 0 ? dayNames0[l] : i === 1 ? dayNames1[l] : null
+    const dateStr = d.format('ddd, D MMM')
+    const title = prefix ? `${prefix} (${dateStr})` : dateStr
+    return { id: d.format('YYYY-MM-DD'), title: title.slice(0, 24) }
+  })
+
+  return listMsg(bodies[l] || bodies.en, b(l, 'select'), [{ title: sectionTitles[l] || sectionTitles.en, rows }])
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -302,12 +526,12 @@ function isYes(text, lang) {
 }
 
 function isNo(text, lang) {
-  const no = { en: ['no', 'n', 'cancel', 'nope'], ms: ['tidak', 'tak', 'cancel', 'batal'], zh: ['否', '不', 'no'] }
+  // 'no' included in every language because button IDs are always English
+  const no = { en: ['no', 'n', 'cancel', 'nope'], ms: ['tidak', 'tak', 'cancel', 'batal', 'no'], zh: ['否', '不', 'no'] }
   const lower = text.toLowerCase()
   return (no[lang] || no.en).some((w) => lower.includes(w))
 }
 
-// Keyword-based rating — LLM only called when this returns null
 function parseRatingKeywords(text) {
   const lower = text.toLowerCase()
   const positive = ['excellent', 'cemerlang', '非常满意', 'great', 'good', 'bagus', 'best', 'amazing', 'love', 'perfect', '5', 'five', '⭐⭐⭐⭐⭐']
@@ -345,7 +569,6 @@ async function createAppointment({ patientId, serviceId, doctorId, date, time, p
     .select()
     .single()
 
-  // Push to doctor's Google Calendar (non-fatal)
   if (doctorId) {
     const { data: doctor } = await db.from('doctors').select('google_calendar_id, name').eq('id', doctorId).single()
     if (doctor?.google_calendar_id) {
@@ -355,7 +578,6 @@ async function createAppointment({ patientId, serviceId, doctorId, date, time, p
     await notifyNewBooking({ doctorId, appointmentId: data.id, patientName, serviceName, dateStr: date, timeStr: time, bookingId: data.id.slice(0, 8).toUpperCase() }).catch(() => {})
   }
 
-  // Schedule patient reminders + follow-up
   const dt = dayjs(`${date}T${time}`)
   await db.from('reminders').insert([
     { appointment_id: data.id, type: '24h', scheduled_at: dt.subtract(24, 'hour').toISOString() },
@@ -385,7 +607,6 @@ async function getDoctorDaySchedule(doctorId, dateStr) {
 }
 
 async function getDoctorWeekSchedule(doctorId) {
-  // Mon to Sun of current week
   const today = dayjs()
   const monday = today.startOf('week').add(1, 'day')
   const sunday = monday.add(6, 'day')
@@ -406,7 +627,6 @@ function formatDaySchedule(doctor, dateStr, appointments) {
   const dateLabel = dayjs(dateStr).format('ddd, D MMM YYYY')
   const isToday = dayjs(dateStr).isSame(dayjs(), 'day')
   const dayWord = isToday ? 'today' : dayjs(dateStr).format('dddd')
-
   const header = `👨‍⚕️ Hi ${shortName}!\n\n`
 
   if (!appointments.length) {
@@ -430,7 +650,6 @@ function formatWeekSchedule(doctor, appointments) {
     return `👨‍⚕️ Hi ${shortName}!\n\nNo appointments this week (${monday.format('D MMM')} – ${sunday.format('D MMM')}). 😊\n\n─────────────────\n${DOCTOR_MENU}`
   }
 
-  // Group by date
   const byDate = {}
   for (const a of appointments) {
     if (!byDate[a.appointment_date]) byDate[a.appointment_date] = []
@@ -463,12 +682,9 @@ async function getOrCreateDoctorConversation(phone, doctorId) {
 async function handleDoctorFlow(doctor, phone, text) {
   const conv = await getOrCreateDoctorConversation(phone, doctor.id)
 
-  // Waiting for a specific date
   if (conv.state === STATES.DOCTOR_AWAITING_DATE) {
     const dateStr = parseDate(text)
-    if (!dateStr) {
-      return `Invalid date. Please reply with a date like *20 May* or *2026-05-20*`
-    }
+    if (!dateStr) return `Invalid date. Please reply with a date like *20 May* or *2026-05-20*`
     await updateConversation(phone, { state: STATES.DOCTOR_MENU })
     const appts = await getDoctorDaySchedule(doctor.id, dateStr)
     return formatDaySchedule(doctor, dateStr, appts)
@@ -480,24 +696,20 @@ async function handleDoctorFlow(doctor, phone, text) {
     const appts = await getDoctorDaySchedule(doctor.id, dayjs().format('YYYY-MM-DD'))
     return formatDaySchedule(doctor, dayjs().format('YYYY-MM-DD'), appts)
   }
-
   if (n === '2') {
     const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD')
     const appts = await getDoctorDaySchedule(doctor.id, tomorrow)
     return formatDaySchedule(doctor, tomorrow, appts)
   }
-
   if (n === '3') {
     const appts = await getDoctorWeekSchedule(doctor.id)
     return formatWeekSchedule(doctor, appts)
   }
-
   if (n === '4') {
     await updateConversation(phone, { state: STATES.DOCTOR_AWAITING_DATE })
     return `Which date would you like to check?\n(e.g. *20 May* or *2026-05-20*)`
   }
 
-  // Default: show today's schedule + menu
   await updateConversation(phone, { state: STATES.DOCTOR_MENU })
   const appts = await getDoctorDaySchedule(doctor.id, dayjs().format('YYYY-MM-DD'))
   return formatDaySchedule(doctor, dayjs().format('YYYY-MM-DD'), appts)
@@ -513,12 +725,32 @@ async function getOrCreatePatientConversation(phone) {
     .single()
   if (existing) return existing
 
-  const { data: patient } = await db.from('patients').insert({ phone }).select().single()
-  const { data: conv } = await db
+  // Get or create the patient row
+  let patientId
+  const { data: existingPatient } = await db.from('patients').select('id').eq('phone', phone).single()
+  if (existingPatient) {
+    patientId = existingPatient.id
+  } else {
+    const { data: newPatient } = await db.from('patients').insert({ phone }).select('id').single()
+    patientId = newPatient.id
+  }
+
+  // Insert conversation — handle race where another request created it simultaneously
+  const { data: conv, error } = await db
     .from('conversations')
-    .insert({ phone, patient_id: patient.id, state: STATES.IDLE })
+    .insert({ phone, patient_id: patientId, state: STATES.IDLE })
     .select('*, patients(name, language)')
     .single()
+
+  if (error?.code === '23505') {
+    const { data: raceConv } = await db
+      .from('conversations')
+      .select('*, patients(name, language)')
+      .eq('phone', phone)
+      .single()
+    return raceConv
+  }
+
   return conv
 }
 
@@ -526,11 +758,13 @@ async function handleIdle(conv, text) {
   const lang = conv.patients?.language
   const name = conv.patients?.name
 
-  // New patient — no language selected yet
-  if (!lang || lang === 'en' && !name) {
-    // Check if they're selecting a language (might already be in AWAITING_LANGUAGE somehow)
+  if (!lang || (lang === 'en' && !name)) {
     await updateConversation(conv.phone, { state: STATES.AWAITING_LANGUAGE })
-    return { reply: t('languageMenu', 'en'), nextState: STATES.AWAITING_LANGUAGE }
+    return {
+      reply: t('languageMenu', 'en'),
+      interactive: iLanguageMenu(),
+      nextState: STATES.AWAITING_LANGUAGE,
+    }
   }
 
   const n = text.trim()
@@ -538,7 +772,11 @@ async function handleIdle(conv, text) {
   if (n === '1') {
     if (name) {
       await updateConversation(conv.phone, { state: STATES.AWAITING_SERVICE })
-      return { reply: t('askService', lang, name), nextState: STATES.AWAITING_SERVICE }
+      return {
+        reply: t('askService', lang, name),
+        interactive: iServiceList(lang, name),
+        nextState: STATES.AWAITING_SERVICE,
+      }
     }
     await updateConversation(conv.phone, { state: STATES.AWAITING_NAME })
     return { reply: t('askName', lang), nextState: STATES.AWAITING_NAME }
@@ -546,25 +784,43 @@ async function handleIdle(conv, text) {
 
   if (n === '2') {
     const appt = await getUpcomingAppointment(conv.patient_id)
-    if (!appt) return { reply: t('noUpcomingAppt', lang), nextState: STATES.IDLE }
+    if (!appt) {
+      const noApptText = t('noUpcomingAppt', lang)
+      return {
+        reply: noApptText,
+        interactive: btnMsg(noApptText, [{ id: '1', title: b(lang, 'bookNow') }]),
+        nextState: STATES.IDLE,
+      }
+    }
+    const bookedText = t('bookedOptions', lang, {
+      date: dayjs(appt.appointment_date).format('D MMM YYYY'),
+      time: appt.appointment_time.slice(0, 5),
+      service: appt.services?.name || '',
+    })
     await updateConversation(conv.phone, { state: STATES.BOOKED })
     return {
-      reply: t('bookedOptions', lang, {
-        date: dayjs(appt.appointment_date).format('D MMM YYYY'),
-        time: appt.appointment_time.slice(0, 5),
-        service: appt.services?.name || '',
-      }),
+      reply: bookedText,
+      interactive: iBookedOptions(lang, bookedText),
       nextState: STATES.BOOKED,
     }
   }
 
   if (n === '3') {
     await updateConversation(conv.phone, { state: STATES.FAQ_MENU })
-    return { reply: t('faqMenu', lang), nextState: STATES.FAQ_MENU }
+    const faqText = t('faqMenu', lang)
+    return {
+      reply: faqText,
+      interactive: iFaqMenu(lang, faqText),
+      nextState: STATES.FAQ_MENU,
+    }
   }
 
-  // Any other message → show main menu
-  return { reply: t('mainMenu', lang, name), nextState: STATES.IDLE }
+  const menuText = t('mainMenu', lang, name)
+  return {
+    reply: menuText,
+    interactive: iMainMenu(lang, name),
+    nextState: STATES.IDLE,
+  }
 }
 
 async function handleAwaitingLanguage(conv, text) {
@@ -577,7 +833,13 @@ async function handleAwaitingLanguage(conv, text) {
   else if (/english|eng/i.test(text)) lang = 'en'
   else if (/malay|melayu|bm/i.test(text)) lang = 'ms'
   else if (/中文|华语|chinese|mandarin/i.test(text)) lang = 'zh'
-  else return { reply: t('languageMenu', 'en'), nextState: STATES.AWAITING_LANGUAGE }
+  else {
+    return {
+      reply: t('languageMenu', 'en'),
+      interactive: iLanguageMenu(),
+      nextState: STATES.AWAITING_LANGUAGE,
+    }
+  }
 
   await db.from('patients').update({ language: lang }).eq('id', conv.patient_id)
   await updateConversation(conv.phone, { state: STATES.AWAITING_NAME })
@@ -591,7 +853,11 @@ async function handleAwaitingName(conv, text) {
 
   await db.from('patients').update({ name }).eq('id', conv.patient_id)
   await updateConversation(conv.phone, { state: STATES.AWAITING_SERVICE, pending_name: name })
-  return { reply: t('askService', lang, name), nextState: STATES.AWAITING_SERVICE }
+  return {
+    reply: t('askService', lang, name),
+    interactive: iServiceList(lang, name),
+    nextState: STATES.AWAITING_SERVICE,
+  }
 }
 
 async function handleAwaitingService(conv, text) {
@@ -600,7 +866,11 @@ async function handleAwaitingService(conv, text) {
   const serviceName = parseServiceSelection(text)
 
   if (!serviceName) {
-    return { reply: t('invalidInput', lang) + '\n\n' + t('askService', lang, name), nextState: STATES.AWAITING_SERVICE }
+    return {
+      reply: t('invalidInput', lang) + '\n\n' + t('askService', lang, name),
+      interactive: iServiceList(lang, name),
+      nextState: STATES.AWAITING_SERVICE,
+    }
   }
 
   const serviceId = await getServiceIdByName(serviceName)
@@ -612,7 +882,11 @@ async function handleAwaitingService(conv, text) {
     pending_eligible_doctors: JSON.stringify(doctors.map((d) => ({ id: d.id, name: d.name }))),
   })
 
-  return { reply: t('askDoctor', lang, doctors), nextState: STATES.AWAITING_DOCTOR }
+  return {
+    reply: t('askDoctor', lang, doctors),
+    interactive: iDoctorMenu(lang, doctors),
+    nextState: STATES.AWAITING_DOCTOR,
+  }
 }
 
 async function handleAwaitingDoctor(conv, text) {
@@ -628,13 +902,20 @@ async function handleAwaitingDoctor(conv, text) {
     } else {
       const lower = text.toLowerCase()
       const matched = doctors.find((d) => d.name.toLowerCase().includes(lower.split(' ').pop()))
-      if (matched) doctorId = matched.id
-      else return { reply: t('invalidInput', lang) + '\n\n' + t('askDoctor', lang, doctors), nextState: STATES.AWAITING_DOCTOR }
+      if (matched) {
+        doctorId = matched.id
+      } else {
+        return {
+          reply: t('invalidInput', lang) + '\n\n' + t('askDoctor', lang, doctors),
+          interactive: iDoctorMenu(lang, doctors),
+          nextState: STATES.AWAITING_DOCTOR,
+        }
+      }
     }
   }
 
   await updateConversation(conv.phone, { state: STATES.AWAITING_DATE, pending_doctor_id: doctorId })
-  return { reply: t('askDate', lang), nextState: STATES.AWAITING_DATE }
+  return { reply: t('askDate', lang), interactive: iDateList(lang), nextState: STATES.AWAITING_DATE }
 }
 
 async function handleAwaitingDate(conv, text, isReschedule = false) {
@@ -642,25 +923,37 @@ async function handleAwaitingDate(conv, text, isReschedule = false) {
   const dateStr = parseDate(text)
 
   if (!dateStr || !isValidFutureDate(dateStr)) {
-    return { reply: t('invalidInput', lang) + '\n\n' + t('askDate', lang), nextState: conv.state }
+    return { reply: t('invalidInput', lang) + '\n\n' + t('askDate', lang), interactive: iDateList(lang), nextState: conv.state }
   }
 
   const slots = await getAvailableSlots(dateStr, conv.pending_doctor_id || null)
   if (!slots.length) {
-    return { reply: t('noSlots', lang, dayjs(dateStr).format('D MMM YYYY')), nextState: conv.state }
+    return { reply: t('noSlots', lang, dayjs(dateStr).format('D MMM YYYY')), interactive: iDateList(lang), nextState: conv.state }
   }
 
   const nextState = isReschedule ? STATES.RESCHEDULING_SLOT : STATES.AWAITING_SLOT
+  const dateLabel = dayjs(dateStr).format('D MMM YYYY')
   await updateConversation(conv.phone, { state: nextState, pending_date: dateStr })
-  return { reply: t('askSlot', lang, dayjs(dateStr).format('D MMM YYYY'), slots), nextState }
+  return {
+    reply: t('askSlot', lang, dateLabel, slots),
+    interactive: iSlotList(lang, dateLabel, slots),
+    nextState,
+  }
 }
 
 async function handleAwaitingSlot(conv, text, isReschedule = false) {
   const lang = conv.patients?.language || 'en'
   const slots = await getAvailableSlots(conv.pending_date, conv.pending_doctor_id || null)
   const slot = parseSlotSelection(text, slots)
+  const dateLabel = dayjs(conv.pending_date).format('D MMM YYYY')
 
-  if (!slot) return { reply: t('askSlot', lang, dayjs(conv.pending_date).format('D MMM YYYY'), slots), nextState: conv.state }
+  if (!slot) {
+    return {
+      reply: t('askSlot', lang, dateLabel, slots),
+      interactive: iSlotList(lang, dateLabel, slots),
+      nextState: conv.state,
+    }
+  }
 
   const nextState = isReschedule ? STATES.AWAITING_RESCHEDULE_CONFIRMATION : STATES.AWAITING_CONFIRMATION
   await updateConversation(conv.phone, { state: nextState, pending_time: slot })
@@ -674,10 +967,15 @@ async function handleAwaitingSlot(conv, text, isReschedule = false) {
     name: conv.pending_name || conv.patients?.name || '',
     service: service?.name || '',
     doctor: doctor?.name || 'Any available doctor',
-    date: dayjs(conv.pending_date).format('D MMM YYYY'),
+    date: dateLabel,
     time: slot,
   }
-  return { reply: isReschedule ? t('confirmReschedule', lang, d) : t('confirmBooking', lang, d), nextState }
+  const confirmText = isReschedule ? t('confirmReschedule', lang, d) : t('confirmBooking', lang, d)
+  return {
+    reply: confirmText,
+    interactive: iConfirm(lang, confirmText),
+    nextState,
+  }
 }
 
 async function handleAwaitingConfirmation(conv, text) {
@@ -717,10 +1015,31 @@ async function handleAwaitingConfirmation(conv, text) {
 
   if (isNo(text, lang)) {
     await updateConversation(conv.phone, { state: STATES.IDLE, pending_service_id: null, pending_date: null, pending_time: null })
-    return { reply: t('bookingCancelled', lang), nextState: STATES.IDLE }
+    const menuText = t('mainMenu', lang, conv.patients?.name)
+    return {
+      reply: t('bookingCancelled', lang) + '\n\n' + menuText,
+      interactive: iMainMenu(lang, conv.patients?.name),
+      nextState: STATES.IDLE,
+    }
   }
 
-  return { reply: t('invalidInput', lang), nextState: STATES.AWAITING_CONFIRMATION }
+  // Re-show confirmation buttons
+  const { data: service } = await db.from('services').select('name').eq('id', conv.pending_service_id).single()
+  const { data: doctor } = conv.pending_doctor_id
+    ? await db.from('doctors').select('name').eq('id', conv.pending_doctor_id).single()
+    : { data: null }
+  const confirmText = t('confirmBooking', lang, {
+    name: conv.pending_name || conv.patients?.name || '',
+    service: service?.name || '',
+    doctor: doctor?.name || 'Any available doctor',
+    date: dayjs(conv.pending_date).format('D MMM YYYY'),
+    time: conv.pending_time,
+  })
+  return {
+    reply: confirmText,
+    interactive: iConfirm(lang, confirmText),
+    nextState: STATES.AWAITING_CONFIRMATION,
+  }
 }
 
 async function handleBooked(conv, text) {
@@ -736,32 +1055,48 @@ async function handleBooked(conv, text) {
     const appt = await getUpcomingAppointment(conv.patient_id)
     if (appt) await updateConversation(conv.phone, { rescheduling_appointment_id: appt.id })
     await updateConversation(conv.phone, { state: STATES.RESCHEDULING_DATE })
-    return { reply: t('askRescheduleDate', lang), nextState: STATES.RESCHEDULING_DATE }
+    return { reply: t('askRescheduleDate', lang), interactive: iDateList(lang), nextState: STATES.RESCHEDULING_DATE }
   }
 
   if (isCancel) {
     await updateConversation(conv.phone, { state: STATES.AWAITING_CANCEL_CONFIRMATION })
-    return { reply: t('confirmCancel', lang), nextState: STATES.AWAITING_CANCEL_CONFIRMATION }
+    const cancelText = t('confirmCancel', lang)
+    return {
+      reply: cancelText,
+      interactive: iCancelConfirm(lang, cancelText),
+      nextState: STATES.AWAITING_CANCEL_CONFIRMATION,
+    }
   }
 
   if (isBack) {
     await updateConversation(conv.phone, { state: STATES.IDLE })
-    return { reply: t('mainMenu', lang, conv.patients?.name), nextState: STATES.IDLE }
+    const menuText = t('mainMenu', lang, conv.patients?.name)
+    return {
+      reply: menuText,
+      interactive: iMainMenu(lang, conv.patients?.name),
+      nextState: STATES.IDLE,
+    }
   }
 
-  // Default: show booked options
   const appt = await getUpcomingAppointment(conv.patient_id)
   if (!appt) {
     await updateConversation(conv.phone, { state: STATES.IDLE })
-    return { reply: t('mainMenu', lang, conv.patients?.name), nextState: STATES.IDLE }
+    const menuText = t('mainMenu', lang, conv.patients?.name)
+    return {
+      reply: menuText,
+      interactive: iMainMenu(lang, conv.patients?.name),
+      nextState: STATES.IDLE,
+    }
   }
 
+  const bookedText = t('bookedOptions', lang, {
+    date: dayjs(appt.appointment_date).format('D MMM YYYY'),
+    time: appt.appointment_time.slice(0, 5),
+    service: appt.services?.name || '',
+  })
   return {
-    reply: t('bookedOptions', lang, {
-      date: dayjs(appt.appointment_date).format('D MMM YYYY'),
-      time: appt.appointment_time.slice(0, 5),
-      service: appt.services?.name || '',
-    }),
+    reply: bookedText,
+    interactive: iBookedOptions(lang, bookedText),
     nextState: STATES.BOOKED,
   }
 }
@@ -791,11 +1126,23 @@ async function handleAwaitingCancelConfirmation(conv, text) {
 
   await updateConversation(conv.phone, { state: STATES.BOOKED })
   const appt = await getUpcomingAppointment(conv.patient_id)
+  if (appt) {
+    const bookedText = t('bookedOptions', lang, {
+      date: dayjs(appt.appointment_date).format('D MMM YYYY'),
+      time: appt.appointment_time.slice(0, 5),
+      service: appt.services?.name || '',
+    })
+    return {
+      reply: bookedText,
+      interactive: iBookedOptions(lang, bookedText),
+      nextState: STATES.BOOKED,
+    }
+  }
+  const menuText = t('mainMenu', lang, conv.patients?.name)
   return {
-    reply: appt
-      ? t('bookedOptions', lang, { date: dayjs(appt.appointment_date).format('D MMM YYYY'), time: appt.appointment_time.slice(0, 5), service: appt.services?.name || '' })
-      : t('mainMenu', lang, conv.patients?.name),
-    nextState: STATES.BOOKED,
+    reply: menuText,
+    interactive: iMainMenu(lang, conv.patients?.name),
+    nextState: STATES.IDLE,
   }
 }
 
@@ -840,24 +1187,26 @@ async function handleAwaitingRescheduleConfirmation(conv, text) {
     }
 
     await updateConversation(conv.phone, { state: STATES.BOOKED, pending_date: null, pending_time: null, rescheduling_appointment_id: null })
-    return { reply: t('rescheduled', lang, { date: dayjs(conv.pending_date).format('D MMM YYYY'), time: conv.pending_time }), nextState: STATES.BOOKED }
+    return {
+      reply: t('rescheduled', lang, { date: dayjs(conv.pending_date).format('D MMM YYYY'), time: conv.pending_time }),
+      nextState: STATES.BOOKED,
+    }
   }
 
   await updateConversation(conv.phone, { state: STATES.BOOKED })
-  return { reply: t('mainMenu', lang, conv.patients?.name), nextState: STATES.BOOKED }
+  const menuText = t('mainMenu', lang, conv.patients?.name)
+  return {
+    reply: menuText,
+    interactive: iMainMenu(lang, conv.patients?.name),
+    nextState: STATES.BOOKED,
+  }
 }
 
 async function handleFaqMenu(conv, text) {
   const lang = conv.patients?.language || 'en'
   const n = text.trim()
 
-  const replies = {
-    '1': t('faqHours', lang),
-    '2': t('faqLocation', lang),
-    '3': t('faqServices', lang),
-    '4': t('faqAppointments', lang),
-    '0': t('mainMenu', lang, conv.patients?.name),
-  }
+  const faqText = t('faqMenu', lang)
 
   if (n === '5') {
     await db.from('escalations').insert({ phone: conv.phone, patient_id: conv.patient_id, reason: 'staff_request' }).catch(() => {})
@@ -867,23 +1216,41 @@ async function handleFaqMenu(conv, text) {
 
   if (n === '0') {
     await updateConversation(conv.phone, { state: STATES.IDLE })
-    return { reply: replies['0'], nextState: STATES.IDLE }
+    const menuText = t('mainMenu', lang, conv.patients?.name)
+    return {
+      reply: menuText,
+      interactive: iMainMenu(lang, conv.patients?.name),
+      nextState: STATES.IDLE,
+    }
   }
 
-  if (replies[n]) {
-    return { reply: replies[n] + `\n\n─────────────────\n${t('faqMenu', lang)}`, nextState: STATES.FAQ_MENU }
+  const answers = {
+    '1': t('faqHours', lang),
+    '2': t('faqLocation', lang),
+    '3': t('faqServices', lang),
+    '4': t('faqAppointments', lang),
   }
 
-  return { reply: t('invalidInput', lang) + '\n\n' + t('faqMenu', lang), nextState: STATES.FAQ_MENU }
+  if (answers[n]) {
+    const answerText = answers[n]
+    return {
+      reply: answerText + '\n\n─────────────────\n' + faqText,
+      interactive: iFaqMenu(lang, answerText),
+      nextState: STATES.FAQ_MENU,
+    }
+  }
+
+  return {
+    reply: t('invalidInput', lang) + '\n\n' + faqText,
+    interactive: iFaqMenu(lang, faqText),
+    nextState: STATES.FAQ_MENU,
+  }
 }
 
 async function handleAwaitingRating(conv, text) {
   const lang = conv.patients?.language || 'en'
 
-  // Keyword match first — no LLM cost
   let sentiment = parseRatingKeywords(text)
-
-  // Only call Claude when keywords are inconclusive
   if (!sentiment) {
     sentiment = await interpretRating(text)
   }
@@ -913,31 +1280,35 @@ async function handleAwaitingRating(conv, text) {
 
 // ─── Main entry point ─────────────────────────────────────────────────────────
 
-export async function processMessage(phone, text) {
-  await db.from('messages').insert({ phone, direction: 'inbound', body: text })
+export async function processMessage(phone, rawText, buttonPayload = null, listId = null) {
+  // When user taps a button or list item, use the ID (already a number) for parsing
+  const effectiveInput = buttonPayload || listId || rawText
 
-  // ── Doctor check first ──────────────────────────────────────────────────────
+  await db.from('messages').insert({ phone, direction: 'inbound', body: rawText })
+
+  // Doctor check first
   const doctor = await getDoctorByPhone(phone)
   if (doctor) {
-    logger.info('Doctor message', { name: doctor.name, text: text.slice(0, 60) })
+    logger.info('Doctor message', { name: doctor.name, text: rawText.slice(0, 60) })
     try {
-      return await handleDoctorFlow(doctor, phone, text)
+      const reply = await handleDoctorFlow(doctor, phone, effectiveInput)
+      return { text: typeof reply === 'string' ? reply : reply?.reply || '', interactive: null }
     } catch (err) {
       logger.error('Doctor flow error', { error: err.message })
-      return `Sorry, something went wrong. Please try again.`
+      return { text: 'Sorry, something went wrong. Please try again.', interactive: null }
     }
   }
 
-  // ── Patient flow ────────────────────────────────────────────────────────────
+  // Patient flow
   const conv = await getOrCreatePatientConversation(phone)
   const lang = conv.patients?.language || 'en'
 
-  logger.debug('Patient message', { phone, state: conv.state, text: text.slice(0, 60) })
+  logger.debug('Patient message', { phone, state: conv.state, text: rawText.slice(0, 60) })
 
-  if (conv.is_escalated) return t('escalatedReply', lang)
+  if (conv.is_escalated) return { text: t('escalatedReply', lang), interactive: null }
 
-  // Greeting resets to IDLE (for patients with language set) or AWAITING_LANGUAGE (new)
-  const isGreeting = /^(hi|hello|hey|hai|helo|hii|yo|selamat|你好|您好|ola|assalamualaikum|salam)[\s!]*/i.test(text.trim())
+  // Greeting resets flow (check raw text, not button ID)
+  const isGreeting = /^(hi|hello|hey|hai|helo|hii|yo|selamat|你好|您好|ola|assalamualaikum|salam)[\s!]*/i.test(rawText.trim())
   if (isGreeting && conv.state !== STATES.IDLE && conv.state !== STATES.AWAITING_LANGUAGE) {
     await updateConversation(conv.phone, { state: STATES.IDLE, pending_service_id: null, pending_date: null, pending_time: null })
     conv.state = STATES.IDLE
@@ -946,30 +1317,33 @@ export async function processMessage(phone, text) {
   let result
   try {
     switch (conv.state) {
-      case STATES.IDLE:                         result = await handleIdle(conv, text); break
-      case STATES.AWAITING_LANGUAGE:            result = await handleAwaitingLanguage(conv, text); break
-      case STATES.AWAITING_NAME:                result = await handleAwaitingName(conv, text); break
-      case STATES.AWAITING_SERVICE:             result = await handleAwaitingService(conv, text); break
-      case STATES.AWAITING_DOCTOR:              result = await handleAwaitingDoctor(conv, text); break
-      case STATES.AWAITING_DATE:                result = await handleAwaitingDate(conv, text); break
-      case STATES.AWAITING_SLOT:                result = await handleAwaitingSlot(conv, text); break
-      case STATES.AWAITING_CONFIRMATION:        result = await handleAwaitingConfirmation(conv, text); break
-      case STATES.BOOKED:                       result = await handleBooked(conv, text); break
-      case STATES.AWAITING_CANCEL_CONFIRMATION: result = await handleAwaitingCancelConfirmation(conv, text); break
-      case STATES.RESCHEDULING_DATE:            result = await handleReschedulingDate(conv, text); break
-      case STATES.RESCHEDULING_SLOT:            result = await handleReschedulingSlot(conv, text); break
-      case STATES.AWAITING_RESCHEDULE_CONFIRMATION: result = await handleAwaitingRescheduleConfirmation(conv, text); break
-      case STATES.FAQ_MENU:                     result = await handleFaqMenu(conv, text); break
-      case STATES.AWAITING_RATING:              result = await handleAwaitingRating(conv, text); break
-      case STATES.ESCALATED:                    return t('escalatedReply', lang)
+      case STATES.IDLE:                              result = await handleIdle(conv, effectiveInput); break
+      case STATES.AWAITING_LANGUAGE:                 result = await handleAwaitingLanguage(conv, effectiveInput); break
+      case STATES.AWAITING_NAME:                     result = await handleAwaitingName(conv, rawText); break
+      case STATES.AWAITING_SERVICE:                  result = await handleAwaitingService(conv, effectiveInput); break
+      case STATES.AWAITING_DOCTOR:                   result = await handleAwaitingDoctor(conv, effectiveInput); break
+      case STATES.AWAITING_DATE:                     result = await handleAwaitingDate(conv, effectiveInput); break
+      case STATES.AWAITING_SLOT:                     result = await handleAwaitingSlot(conv, effectiveInput); break
+      case STATES.AWAITING_CONFIRMATION:             result = await handleAwaitingConfirmation(conv, effectiveInput); break
+      case STATES.BOOKED:                            result = await handleBooked(conv, effectiveInput); break
+      case STATES.AWAITING_CANCEL_CONFIRMATION:      result = await handleAwaitingCancelConfirmation(conv, effectiveInput); break
+      case STATES.RESCHEDULING_DATE:                 result = await handleReschedulingDate(conv, effectiveInput); break
+      case STATES.RESCHEDULING_SLOT:                 result = await handleReschedulingSlot(conv, effectiveInput); break
+      case STATES.AWAITING_RESCHEDULE_CONFIRMATION:  result = await handleAwaitingRescheduleConfirmation(conv, effectiveInput); break
+      case STATES.FAQ_MENU:                          result = await handleFaqMenu(conv, effectiveInput); break
+      case STATES.AWAITING_RATING:                   result = await handleAwaitingRating(conv, rawText); break
+      case STATES.ESCALATED:                         return { text: t('escalatedReply', lang), interactive: null }
       default:
         await updateConversation(phone, { state: STATES.IDLE })
-        result = await handleIdle(conv, text)
+        result = await handleIdle(conv, effectiveInput)
     }
   } catch (err) {
     logger.error('Bot error', { phone, state: conv.state, error: err.message })
-    return t('invalidInput', lang)
+    return { text: t('invalidInput', lang), interactive: null }
   }
 
-  return result?.reply || t('invalidInput', lang)
+  return {
+    text: result?.reply || t('invalidInput', lang),
+    interactive: result?.interactive || null,
+  }
 }

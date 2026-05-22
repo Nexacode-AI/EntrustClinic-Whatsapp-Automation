@@ -10,7 +10,8 @@ export async function listPatients(req, res) {
     .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
 
   if (search) {
-    query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`)
+    const safe = search.replace(/[^a-zA-Z0-9 +\-().@]/g, '')
+    if (safe) query = query.or(`name.ilike.%${safe}%,phone.ilike.%${safe}%`)
   }
 
   const { data, error } = await query

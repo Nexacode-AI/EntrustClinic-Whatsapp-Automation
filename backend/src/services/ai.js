@@ -16,7 +16,7 @@ export async function interpretRating(text) {
   try {
     const res = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 10,
+      max_tokens: 50,
       messages: [{
         role: 'user',
         content: `A patient left feedback after a clinic visit. Classify their sentiment. Reply with ONLY one word: "positive", "neutral", or "negative".\n\nFeedback: "${text}"`,

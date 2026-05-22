@@ -1,9 +1,8 @@
-import { parseTwilioWebhook, sendMessage } from '../services/twilio.js'
+import { parseTwilioWebhook, sendMessage, sendInteractiveMessage } from '../services/twilio.js'
 import { processMessage } from '../services/bot.js'
 import { logger } from '../config/logger.js'
 
 export async function handleWebhook(req, res) {
-  // Twilio expects a 200 immediately, then we process async
   res.status(200).send('<Response></Response>')
 
   const parsed = parseTwilioWebhook(req.body)
@@ -12,15 +11,20 @@ export async function handleWebhook(req, res) {
     return
   }
 
-  const { phone, text } = parsed
-  logger.info('Inbound message', { phone, text: text.slice(0, 80) })
+  const { phone, text, buttonPayload, listId } = parsed
+  logger.info('Inbound message', { phone, text: text.slice(0, 80), buttonPayload, listId })
 
   try {
-    const reply = await processMessage(phone, text)
-    if (reply) await sendMessage(phone, reply)
+    const result = await processMessage(phone, text, buttonPayload, listId)
+    if (!result) return
+    if (result.interactive) {
+      await sendInteractiveMessage(phone, result.text, result.interactive)
+    } else {
+      await sendMessage(phone, result.text)
+    }
   } catch (err) {
     logger.error('Webhook: processing error', { phone, error: err.message, stack: err.stack })
-    await sendMessage(phone, "Sorry, something went wrong. Please try again in a moment.").catch(() => {})
+    await sendMessage(phone, 'Sorry, something went wrong. Please try again in a moment.').catch(() => {})
   }
 }
 
