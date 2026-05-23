@@ -18,7 +18,8 @@
     "helmet": "^7.1.0",
     "node-cron": "^3.0.3",
     "twilio": "^5.0.0",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"
