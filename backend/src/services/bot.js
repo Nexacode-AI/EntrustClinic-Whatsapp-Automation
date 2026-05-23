@@ -494,17 +494,27 @@ function iDateList(lang) {
 function parseDate(text) {
   const t = text.trim()
   const year = dayjs().year()
-  const attempts = [
-    [t,              'YYYY-MM-DD'],
-    [t,              'DD/MM/YYYY'],
-    [t,              'D/M/YYYY'],
-    [t,              'D MMM YYYY'],
-    [t,              'D MMMM YYYY'],
+
+  // Formats that include an explicit year — use as-is
+  const explicitYear = [
+    [t, 'YYYY-MM-DD'],
+    [t, 'DD/MM/YYYY'],
+    [t, 'D/M/YYYY'],
+    [t, 'D MMM YYYY'],
+    [t, 'D MMMM YYYY'],
+  ]
+  for (const [str, fmt] of explicitYear) {
+    const d = dayjs(str, fmt, true)
+    if (d.isValid()) return d.format('YYYY-MM-DD')
+  }
+
+  // Formats without year — try current year, then next year if past
+  const noYear = [
     [`${t} ${year}`, 'D MMM YYYY'],
     [`${t} ${year}`, 'D MMMM YYYY'],
     [`${t} ${year}`, 'DD MMM YYYY'],
   ]
-  for (const [str, fmt] of attempts) {
+  for (const [str, fmt] of noYear) {
     const d = dayjs(str, fmt, true)
     if (d.isValid()) {
       return (d.isBefore(dayjs(), 'day') ? d.add(1, 'year') : d).format('YYYY-MM-DD')
