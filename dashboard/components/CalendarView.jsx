@@ -52,7 +52,10 @@ function DayModal({ day, appts, onClose }) {
 }
 
 export default function CalendarView({ appointments }) {
-  const [current, setCurrent] = useState(dayjs().startOf('month'))
+  const firstAppt = appointments[0]?.appointment_date
+  const [current, setCurrent] = useState(
+    firstAppt ? dayjs(firstAppt).startOf('month') : dayjs().startOf('month')
+  )
   const [selected, setSelected] = useState(null)
 
   const prevMonth = () => setCurrent(c => c.subtract(1, 'month'))
