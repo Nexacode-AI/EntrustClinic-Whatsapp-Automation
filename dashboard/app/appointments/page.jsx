@@ -1,6 +1,7 @@
 import { api } from '../../lib/api'
 import AppointmentTable from '../../components/AppointmentTable'
-import { CalendarDays } from 'lucide-react'
+import CalendarView from '../../components/CalendarView'
+import { CalendarDays, List, Calendar } from 'lucide-react'
 
 const TABS = [
   { key: 'upcoming',  label: 'Upcoming' },
@@ -11,9 +12,10 @@ const TABS = [
 
 export default async function AppointmentsPage({ searchParams }) {
   const status = searchParams?.status || 'upcoming'
+  const view = searchParams?.view || 'list'
   let data = []
   try {
-    const res = await api.appointments({ status, limit: 100 })
+    const res = await api.appointments({ status, limit: 200 })
     data = res.data || []
   } catch {}
 
@@ -27,23 +29,56 @@ export default async function AppointmentsPage({ searchParams }) {
         <p className="text-sm text-ink-secondary ml-7">Manage and track all patient appointments</p>
       </div>
 
-      <div className="flex gap-1 mb-6 bg-card border border-border rounded-xl p-1 w-fit shadow-sm">
-        {TABS.map(({ key, label }) => (
+      <div className="flex items-center justify-between mb-6">
+        {/* Status tabs */}
+        <div className="flex gap-1 bg-card border border-border rounded-xl p-1 w-fit shadow-sm">
+          {TABS.map(({ key, label }) => (
+            <a
+              key={key}
+              href={`/appointments?status=${key}&view=${view}`}
+              className={`px-4 py-1.5 text-sm rounded-lg font-medium transition-all ${
+                status === key
+                  ? 'bg-brand text-white shadow-sm'
+                  : 'text-ink-secondary hover:text-ink'
+              }`}
+            >
+              {label}
+            </a>
+          ))}
+        </div>
+
+        {/* View toggle */}
+        <div className="flex gap-1 bg-card border border-border rounded-xl p-1 shadow-sm">
           <a
-            key={key}
-            href={`/appointments?status=${key}`}
-            className={`px-4 py-1.5 text-sm rounded-lg font-medium transition-all ${
-              status === key
+            href={`/appointments?status=${status}&view=list`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
+              view === 'list'
                 ? 'bg-brand text-white shadow-sm'
                 : 'text-ink-secondary hover:text-ink'
             }`}
           >
-            {label}
+            <List size={14} />
+            List
           </a>
-        ))}
+          <a
+            href={`/appointments?status=${status}&view=calendar`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
+              view === 'calendar'
+                ? 'bg-brand text-white shadow-sm'
+                : 'text-ink-secondary hover:text-ink'
+            }`}
+          >
+            <Calendar size={14} />
+            Calendar
+          </a>
+        </div>
       </div>
 
-      <AppointmentTable appointments={data} />
+      {view === 'calendar' ? (
+        <CalendarView appointments={data} />
+      ) : (
+        <AppointmentTable appointments={data} />
+      )}
     </div>
   )
 }
