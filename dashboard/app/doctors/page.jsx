@@ -120,7 +120,7 @@ export default function DoctorsPage() {
                 className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Google Calendar ID</label>
+              <label className={labelCls}>Doctor's Gmail (for Calendar)</label>
               <input type="text" placeholder="doctor@gmail.com" value={addForm.google_calendar_id}
                 onChange={(e) => setAddForm((f) => ({ ...f, google_calendar_id: e.target.value }))}
                 className={inputCls} />
@@ -229,10 +229,10 @@ export default function DoctorsPage() {
                     onChange={(e) => setForm((f) => ({ ...f, whatsapp_phone: e.target.value }))} className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>Google Calendar ID</label>
+                  <label className={labelCls}>Doctor's Gmail (for Calendar)</label>
                   <input type="text" placeholder="doctor@gmail.com" value={form.google_calendar_id}
                     onChange={(e) => setForm((f) => ({ ...f, google_calendar_id: e.target.value }))} className={inputCls} />
-                  <p className="text-xs text-ink-muted mt-1">Doctor must share their Google Calendar with your account</p>
+                  <p className="text-xs text-ink-muted mt-1">Doctor must share their Google Calendar with the system Gmail account to sync appointments</p>
                 </div>
               </div>
             ) : (
