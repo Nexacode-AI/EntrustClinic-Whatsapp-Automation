@@ -61,9 +61,9 @@ export const T = {
   },
 
   askDoctor: {
-    en: (doctors) => `Which doctor do you prefer?\n\n${doctors.map((d, i) => `${i + 1}. ${d.name}`).join('\n')}\n${doctors.length + 1}. No preference`,
-    ms: (doctors) => `Doktor mana yang anda pilih?\n\n${doctors.map((d, i) => `${i + 1}. ${d.name}`).join('\n')}\n${doctors.length + 1}. Tiada pilihan`,
-    zh: (doctors) => `您希望选择哪位医生？\n\n${doctors.map((d, i) => `${i + 1}. ${d.name}`).join('\n')}\n${doctors.length + 1}. 无偏好`,
+    en: (doctors) => `Which doctor do you prefer?\n\n${doctors.map((d, i) => `${i + 1}. ${d.name}`).join('\n')}`,
+    ms: (doctors) => `Doktor mana yang anda pilih?\n\n${doctors.map((d, i) => `${i + 1}. ${d.name}`).join('\n')}`,
+    zh: (doctors) => `您希望选择哪位医生？\n\n${doctors.map((d, i) => `${i + 1}. ${d.name}`).join('\n')}`,
   },
 
   askDate: {
@@ -913,23 +913,20 @@ async function handleAwaitingDoctor(conv, text) {
   const lang = conv.patients?.language || 'en'
   const doctors = JSON.parse(conv.pending_eligible_doctors || '[]')
   const n = parseInt(text)
-  const noPreference = n === doctors.length + 1 || /no|any|tak kisah|无偏好/i.test(text)
-
   let doctorId = null
-  if (!noPreference) {
-    if (!isNaN(n) && n >= 1 && n <= doctors.length) {
-      doctorId = doctors[n - 1].id
+
+  if (!isNaN(n) && n >= 1 && n <= doctors.length) {
+    doctorId = doctors[n - 1].id
+  } else {
+    const lower = text.toLowerCase()
+    const matched = doctors.find((d) => d.name.toLowerCase().includes(lower.split(' ').pop()))
+    if (matched) {
+      doctorId = matched.id
     } else {
-      const lower = text.toLowerCase()
-      const matched = doctors.find((d) => d.name.toLowerCase().includes(lower.split(' ').pop()))
-      if (matched) {
-        doctorId = matched.id
-      } else {
-        return {
-          reply: t('invalidInput', lang) + '\n\n' + t('askDoctor', lang, doctors),
-          interactive: iDoctorMenu(lang, doctors),
-          nextState: STATES.AWAITING_DOCTOR,
-        }
+      return {
+        reply: t('invalidInput', lang) + '\n\n' + t('askDoctor', lang, doctors),
+        interactive: iDoctorMenu(lang, doctors),
+        nextState: STATES.AWAITING_DOCTOR,
       }
     }
   }
@@ -1067,9 +1064,15 @@ async function handleBooked(conv, text) {
   const n = text.trim()
   const lower = text.toLowerCase()
 
+  const isConfirm = /i.?ll be there|confirm|ok|okay|yes|✅|hadir|datang|好的|会去/i.test(lower)
   const isReschedule = n === '1' || /reschedule|jadual semula|重新/i.test(lower)
   const isCancel = n === '2' || /cancel|batal|取消/i.test(lower)
   const isBack = n === '3' || /menu|back|balik|返回/i.test(lower)
+
+  if (isConfirm) {
+    const confirmMsg = { en: `Great! See you then 😊 Please arrive 10 mins early.`, ms: `Baik! Jumpa anda nanti 😊 Sila tiba 10 minit lebih awal.`, zh: `好的！到时见 😊 请提前10分钟到达。` }
+    return { reply: confirmMsg[lang] || confirmMsg.en, nextState: STATES.BOOKED }
+  }
 
   if (isReschedule) {
     const appt = await getUpcomingAppointment(conv.patient_id)
@@ -1333,6 +1336,32 @@ export async function processMessage(phone, rawText, buttonPayload = null, listI
   if (isGreeting && conv.state !== STATES.IDLE && conv.state !== STATES.AWAITING_LANGUAGE) {
     await updateConversation(conv.phone, { state: STATES.IDLE, pending_service_id: null, pending_date: null, pending_time: null })
     conv.state = STATES.IDLE
+  }
+
+  // Reminder reply intercept — handles all 3 reminder options from any state
+  if (conv.last_reminder_appointment_id) {
+    const r = rawText.trim().toLowerCase()
+    const isConfirm    = /i.?ll be there|✅|confirm|ok|okay|yes|hadir|datang|好的|会去/.test(r)
+    const isReschedule = /reschedule|🔄|jadual semula|重新安排/.test(r) || effectiveInput === '2'
+    const isCancel     = /cancel|❌|batal|取消/.test(r) || effectiveInput === '3'
+
+    if (isConfirm) {
+      await updateConversation(conv.phone, { last_reminder_appointment_id: null })
+      const msg = { en: `Great! See you then 😊 Please arrive 10 mins early.`, ms: `Baik! Jumpa anda nanti 😊 Sila tiba 10 minit lebih awal.`, zh: `好的！到时见 😊 请提前10分钟到达。` }
+      return { text: msg[lang] || msg.en, interactive: null }
+    }
+
+    if (isReschedule) {
+      const apptId = conv.last_reminder_appointment_id
+      await updateConversation(conv.phone, { state: STATES.RESCHEDULING_DATE, rescheduling_appointment_id: apptId, last_reminder_appointment_id: null })
+      return { text: t('askRescheduleDate', lang), interactive: iDateList(lang), nextState: STATES.RESCHEDULING_DATE }
+    }
+
+    if (isCancel) {
+      await updateConversation(conv.phone, { state: STATES.AWAITING_CANCEL_CONFIRMATION, last_reminder_appointment_id: null })
+      const cancelText = t('confirmCancel', lang)
+      return { text: cancelText, interactive: iCancelConfirm(lang, cancelText), nextState: STATES.AWAITING_CANCEL_CONFIRMATION }
+    }
   }
 
   let result
