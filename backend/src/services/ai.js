@@ -19,7 +19,7 @@ export async function interpretRating(text) {
       max_tokens: 50,
       messages: [{
         role: 'user',
-        content: `A patient left feedback after a clinic visit. Classify their sentiment. Reply with ONLY one word: "positive", "neutral", or "negative".\n\nFeedback: "${text}"`,
+        content: `A patient left feedback after a clinic visit. Classify the overall sentiment strictly.\n\nRules:\n- Any complaint, disappointment, or negative mention → "negative"\n- Fully satisfied, happy, praise → "positive"\n- Mixed or unclear → "neutral"\n\nReply with ONLY one word: positive, neutral, or negative.\n\nFeedback: "${text}"`,
       }],
     })
     const result = res.content[0].text.trim().toLowerCase()

@@ -181,9 +181,9 @@ export const T = {
   },
 
   followUp: {
-    en: (name) => `Hi ${name}! 🌸 Hope you're feeling better after today's visit.\n\nHow was your experience with us?\n\n⭐⭐⭐⭐⭐ *Excellent*\n⭐⭐⭐ *Okay*\n⭐ *Not great*`,
-    ms: (name) => `Hi ${name}! 🌸 Semoga anda berasa lebih baik selepas lawatan hari ini.\n\nBagaimana pengalaman anda bersama kami?\n\n⭐⭐⭐⭐⭐ *Cemerlang*\n⭐⭐⭐ *Baik*\n⭐ *Kurang memuaskan*`,
-    zh: (name) => `您好，${name}！🌸 希望您今天就诊后好多了。\n\n您对我们的服务满意吗？\n\n⭐⭐⭐⭐⭐ *非常满意*\n⭐⭐⭐ *一般*\n⭐ *不满意*`,
+    en: (name) => `Hi ${name}! 👋 Hope you're feeling better after today's visit.\n\nHow was your experience with us? Tell us anything — we'd love to hear from you! 😊`,
+    ms: (name) => `Hi ${name}! 👋 Semoga anda berasa lebih baik selepas lawatan hari ini.\n\nBagaimana pengalaman anda bersama kami? Kongsikan pendapat anda — kami ingin mendengar! 😊`,
+    zh: (name) => `您好，${name}！👋 希望您今天就诊后好多了。\n\n您对我们的服务有什么感想？请随意告诉我们！😊`,
   },
 
   reviewRequest: {
@@ -192,10 +192,16 @@ export const T = {
     zh: () => `太棒了！🎉 非常感谢！您介意在Google上分享您的体验吗？这对我们很有帮助！💚\n\n${env.clinic.googleReviewLink}`,
   },
 
+  neutralFeedback: {
+    en: () => `Thank you for your feedback! 🙏 We truly appreciate it.\n\nWould you mind leaving us a quick review on Google? It means a lot to us! 💚\n\n${env.clinic.googleReviewLink}\n\nIf there's anything we could have done better, feel free to call us at *${env.clinic.phone}* — we're always happy to help! 😊`,
+    ms: () => `Terima kasih atas maklum balas anda! 🙏 Kami sangat menghargainya.\n\nBoleh tinggalkan ulasan di Google? Ia sangat bermakna bagi kami! 💚\n\n${env.clinic.googleReviewLink}\n\nJika ada sesuatu yang boleh kami baiki, hubungi kami di *${env.clinic.phone}* — kami sedia membantu! 😊`,
+    zh: () => `感谢您的反馈！🙏 我们非常感激。\n\n请问您能在Google留下评价吗？对我们帮助很大！💚\n\n${env.clinic.googleReviewLink}\n\n如有任何不满意的地方，欢迎致电 *${env.clinic.phone}* — 我们随时为您服务！😊`,
+  },
+
   escalateMessage: {
-    en: () => `We're really sorry to hear that 🙏 Your feedback means a lot to us.\n\nOur team will reach out to you shortly to make things right.`,
-    ms: () => `Kami benar-benar minta maaf 🙏 Maklum balas anda sangat bermakna bagi kami.\n\nPasukan kami akan menghubungi anda tidak lama lagi.`,
-    zh: () => `我们非常抱歉 🙏 您的反馈对我们非常重要。\n\n我们的团队将很快与您联系，尽力改善。`,
+    en: () => `We're really sorry to hear that 🙏 Your experience matters to us.\n\nPlease call us at *${env.clinic.phone}* and we'll make it right.`,
+    ms: () => `Kami benar-benar minta maaf 🙏 Pengalaman anda sangat bermakna bagi kami.\n\nSila hubungi kami di *${env.clinic.phone}* dan kami akan selesaikannya.`,
+    zh: () => `我们非常抱歉 🙏 您的体验对我们非常重要。\n\n请致电 *${env.clinic.phone}* 联系我们，我们会尽力改善。`,
   },
 
   reminder24h: {
@@ -856,10 +862,14 @@ async function handleAwaitingLanguage(conv, text) {
   return { reply: t('askName', lang), nextState: STATES.AWAITING_NAME }
 }
 
+const GREETING_WORDS = new Set(['hi', 'hello', 'hey', 'helo', 'hii', 'hiii', 'yo', 'sup', 'hai'])
+
 async function handleAwaitingName(conv, text) {
   const lang = conv.patients?.language || 'en'
   const name = text.trim()
-  if (name.length < 2 || name.length > 60) return { reply: t('invalidInput', lang), nextState: STATES.AWAITING_NAME }
+  if (name.length < 2 || name.length > 60 || GREETING_WORDS.has(name.toLowerCase())) {
+    return { reply: t('invalidInput', lang), nextState: STATES.AWAITING_NAME }
+  }
 
   await db.from('patients').update({ name }).eq('id', conv.patient_id)
   await updateConversation(conv.phone, { state: STATES.AWAITING_SERVICE, pending_name: name })
@@ -1260,10 +1270,7 @@ async function handleFaqMenu(conv, text) {
 async function handleAwaitingRating(conv, text) {
   const lang = conv.patients?.language || 'en'
 
-  let sentiment = parseRatingKeywords(text)
-  if (!sentiment) {
-    sentiment = await interpretRating(text)
-  }
+  const sentiment = await interpretRating(text)
 
   const { data: appt } = await db
     .from('appointments')
@@ -1282,6 +1289,10 @@ async function handleAwaitingRating(conv, text) {
   if (sentiment === 'positive') {
     if (appt) await db.from('follow_ups').update({ review_sent: true }).eq('appointment_id', appt.id)
     return { reply: t('reviewRequest', lang), nextState: STATES.IDLE }
+  }
+
+  if (sentiment === 'neutral') {
+    return { reply: t('neutralFeedback', lang), nextState: STATES.IDLE }
   }
 
   await db.from('escalations').insert({ phone: conv.phone, patient_id: conv.patient_id, reason: 'low_rating' }).catch(() => {})

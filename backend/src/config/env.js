@@ -45,6 +45,7 @@ export const env = {
 
   clinic: {
     name: process.env.CLINIC_NAME || 'Entrust Family Clinic',
+    phone: process.env.CLINIC_PHONE || '+60 11-2199 3226',
     googleReviewLink: process.env.GOOGLE_REVIEW_LINK || '',
   },
 
