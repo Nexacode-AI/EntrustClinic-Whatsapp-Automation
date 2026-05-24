@@ -31,6 +31,13 @@ export async function getMessages(req, res) {
   res.json(data)
 }
 
+export async function deleteConversation(req, res) {
+  const { phone } = req.params
+  await db.from('messages').delete().eq('phone', phone)
+  await db.from('conversations').delete().eq('phone', phone)
+  res.status(204).send()
+}
+
 export async function resolveEscalation(req, res) {
   const { phone } = req.params
   const { resolved_by } = req.body

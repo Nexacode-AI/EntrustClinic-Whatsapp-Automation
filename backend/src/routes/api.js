@@ -1,8 +1,8 @@
 import { Router } from 'express'
 import { apiAuth } from '../middleware/auth.js'
 import { listAppointments, getAppointment, updateAppointmentStatus, getMonthlyStats } from '../controllers/appointments.js'
-import { listPatients, getPatient } from '../controllers/patients.js'
-import { listConversations, getMessages, resolveEscalation as resolveConvEscalation } from '../controllers/conversations.js'
+import { listPatients, getPatient, updatePatient, deletePatient } from '../controllers/patients.js'
+import { listConversations, getMessages, deleteConversation, resolveEscalation as resolveConvEscalation } from '../controllers/conversations.js'
 import { listEscalations, resolveEscalation } from '../controllers/escalations.js'
 import { getDashboardStats } from '../controllers/analytics.js'
 import {
@@ -25,10 +25,13 @@ router.patch('/appointments/:id/status', updateAppointmentStatus)
 // Patients
 router.get('/patients', listPatients)
 router.get('/patients/:id', getPatient)
+router.patch('/patients/:id', updatePatient)
+router.delete('/patients/:id', deletePatient)
 
 // Conversations / chat history
 router.get('/conversations', listConversations)
 router.get('/conversations/:phone/messages', getMessages)
+router.delete('/conversations/:phone', deleteConversation)
 router.post('/conversations/:phone/resolve', resolveConvEscalation)
 
 // Escalations

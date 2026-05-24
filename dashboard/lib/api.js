@@ -18,8 +18,11 @@ export const api = {
   updateAppointmentStatus: (id, status) => request(`/appointments/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   patients: (params = {}) => request('/patients?' + new URLSearchParams(params)),
   patient: (id) => request(`/patients/${id}`),
+  updatePatient: (id, data) => request(`/patients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deletePatient: (id) => request(`/patients/${id}`, { method: 'DELETE' }),
   conversations: (params = {}) => request('/conversations?' + new URLSearchParams(params)),
   messages: (phone) => request(`/conversations/${encodeURIComponent(phone)}/messages`),
+  deleteConversation: (phone) => request(`/conversations/${encodeURIComponent(phone)}`, { method: 'DELETE' }),
   sendMessage: async (phone, message) => {
     const res = await fetch(`${BASE}/webhook/send`, {
       method: 'POST',

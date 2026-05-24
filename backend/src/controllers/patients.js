@@ -19,6 +19,27 @@ export async function listPatients(req, res) {
   res.json(data)
 }
 
+export async function updatePatient(req, res) {
+  const { id } = req.params
+  const { name, language } = req.body
+  const updates = {}
+  if (name !== undefined) updates.name = name.trim() || null
+  if (language !== undefined) updates.language = language
+  const { data, error } = await db.from('patients').update(updates).eq('id', id).select().single()
+  if (error) return res.status(500).json({ error: error.message })
+  res.json(data)
+}
+
+export async function deletePatient(req, res) {
+  const { id } = req.params
+  const { data: patient } = await db.from('patients').select('phone').eq('id', id).single()
+  if (!patient) return res.status(404).json({ error: 'Not found' })
+  await db.from('messages').delete().eq('phone', patient.phone)
+  await db.from('conversations').delete().eq('phone', patient.phone)
+  await db.from('patients').delete().eq('id', id)
+  res.status(204).send()
+}
+
 export async function getPatient(req, res) {
   const { id } = req.params
 
