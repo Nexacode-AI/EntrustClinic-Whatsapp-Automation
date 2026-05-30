@@ -1,11 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api } from '../../lib/api'
 import ConversationView from '../../components/ConversationView'
 import { MessageSquare, Trash2 } from 'lucide-react'
 
-export default function ConversationsPage() {
+function ConversationsInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const selectedPhone = searchParams.get('phone')
@@ -108,5 +108,13 @@ export default function ConversationsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ConversationsPage() {
+  return (
+    <Suspense>
+      <ConversationsInner />
+    </Suspense>
   )
 }
