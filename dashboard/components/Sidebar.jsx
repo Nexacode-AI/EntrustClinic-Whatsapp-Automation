@@ -4,8 +4,9 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, CalendarDays, Users, MessageSquare,
   AlertTriangle, Stethoscope, Calendar, ClipboardList,
-  Ban, Megaphone, Activity,
+  Ban, Megaphone, Activity, LogOut,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 const NAV = [
   { href: '/analytics',     label: 'Overview',      icon: LayoutDashboard },
@@ -41,6 +42,13 @@ function NavItem({ href, label, Icon, active }) {
 
 export default function Sidebar() {
   const path = usePathname()
+  const router = useRouter()
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+    router.refresh()
+  }
   return (
     <aside className="w-56 shrink-0 bg-card border-r border-border flex flex-col shadow-sm">
       {/* Brand */}
@@ -69,12 +77,19 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Status */}
-      <div className="px-4 py-4 border-t border-border">
+      {/* Footer */}
+      <div className="px-4 py-4 border-t border-border space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-xs text-ink-muted">Bot active</span>
         </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-ink-secondary hover:text-red-500 hover:bg-red-50 transition-all"
+        >
+          <LogOut size={14} />
+          Sign out
+        </button>
       </div>
     </aside>
   )
