@@ -32,6 +32,13 @@ export const env = {
     connected: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
   },
 
+  meta: {
+    accessToken: process.env.META_ACCESS_TOKEN || '',
+    phoneNumberId: process.env.META_PHONE_NUMBER_ID || '',
+    webhookVerifyToken: process.env.META_WEBHOOK_VERIFY_TOKEN || 'entrust_verify',
+    connected: !!(process.env.META_ACCESS_TOKEN && process.env.META_PHONE_NUMBER_ID),
+  },
+
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY,
   },

@@ -13,8 +13,9 @@ app.set('trust proxy', 1)
 app.use(helmet())
 app.use(cors())
 
-// Twilio sends URL-encoded body
-app.use('/webhook', express.urlencoded({ extended: false }))
+// Twilio sends URL-encoded, Meta sends JSON
+app.use('/webhook/twilio', express.urlencoded({ extended: false }))
+app.use('/webhook/meta', express.json())
 app.use('/api', express.json())
 
 // Rate limit the API — generous for dashboard use

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { handleWebhook, sendManualMessage } from '../controllers/webhook.js'
+import { handleWebhook, handleMetaWebhook, handleMetaVerify, sendManualMessage } from '../controllers/webhook.js'
 import { apiAuth } from '../middleware/auth.js'
 import twilio from 'twilio'
 import { env } from '../config/env.js'
@@ -16,8 +16,12 @@ function validateTwilioSignature(req, res, next) {
   next()
 }
 
-// Twilio posts here for every incoming WhatsApp message
+// Twilio route (existing)
 router.post('/twilio', validateTwilioSignature, handleWebhook)
+
+// Meta Cloud API routes
+router.get('/meta', handleMetaVerify)
+router.post('/meta', handleMetaWebhook)
 
 // Staff sends manual message from dashboard
 router.post('/send', apiAuth, sendManualMessage)
