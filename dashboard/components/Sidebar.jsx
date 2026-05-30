@@ -1,12 +1,12 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, CalendarDays, Users, MessageSquare,
   AlertTriangle, Stethoscope, Calendar, ClipboardList,
-  Ban, Megaphone, Activity, LogOut,
+  Ban, Megaphone, Activity, LogOut, ChevronRight,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { cn } from '../lib/utils'
 
 const NAV = [
   { href: '/analytics',     label: 'Overview',      icon: LayoutDashboard },
@@ -17,26 +17,36 @@ const NAV = [
 ]
 
 const MANAGE = [
-  { href: '/doctors',      label: 'Doctors',    icon: Stethoscope },
-  { href: '/schedule',     label: 'Schedule',   icon: Calendar },
-  { href: '/services',     label: 'Services',   icon: ClipboardList },
-  { href: '/block-dates',  label: 'Block Dates',icon: Ban },
-  { href: '/broadcast',    label: 'Broadcast',  icon: Megaphone },
+  { href: '/doctors',      label: 'Doctors',     icon: Stethoscope },
+  { href: '/schedule',     label: 'Schedule',    icon: Calendar },
+  { href: '/services',     label: 'Services',    icon: ClipboardList },
+  { href: '/block-dates',  label: 'Block Dates', icon: Ban },
+  { href: '/broadcast',    label: 'Broadcast',   icon: Megaphone },
 ]
 
 function NavItem({ href, label, Icon, active }) {
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+      className={cn(
+        'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
         active
-          ? 'bg-brand/10 text-brand'
-          : 'text-ink-secondary hover:text-ink hover:bg-slate-100'
-      }`}
+          ? 'bg-white/10 text-white'
+          : 'text-slate-400 hover:text-white hover:bg-white/6'
+      )}
     >
-      <Icon size={15} strokeWidth={active ? 2.5 : 2} />
-      {label}
+      <Icon size={15} strokeWidth={active ? 2.5 : 2} className={active ? 'text-teal-400' : ''} />
+      <span>{label}</span>
+      {active && <ChevronRight size={12} className="ml-auto text-teal-400/60" />}
     </Link>
+  )
+}
+
+function SectionLabel({ children }) {
+  return (
+    <p className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold px-3 mb-1.5 mt-5">
+      {children}
+    </p>
   )
 }
 
@@ -49,43 +59,44 @@ export default function Sidebar() {
     router.push('/login')
     router.refresh()
   }
+
   return (
-    <aside className="w-56 shrink-0 bg-card border-r border-border flex flex-col shadow-sm">
+    <aside className="w-[220px] shrink-0 bg-[#0F172A] flex flex-col h-screen border-r border-white/5">
       {/* Brand */}
-      <div className="px-4 py-5 border-b border-border">
+      <div className="px-4 py-5 border-b border-white/8">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center shadow-sm">
-            <Activity size={15} className="text-white" strokeWidth={2.5} />
+          <div className="w-8 h-8 rounded-lg bg-teal-500/20 border border-teal-500/30 flex items-center justify-center">
+            <Activity size={14} className="text-teal-400" strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-sm font-bold text-ink leading-tight">Entrust Clinic</p>
-            <p className="text-[11px] text-ink-muted mt-0.5">WhatsApp Automation</p>
+            <p className="text-sm font-bold text-white leading-tight">Entrust Clinic</p>
+            <p className="text-[11px] text-slate-500 mt-0.5">WhatsApp Bot</p>
           </div>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        <p className="text-[10px] uppercase tracking-widest text-ink-muted font-semibold px-3 mb-2">Monitor</p>
+      <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-0.5">
+        <SectionLabel>Monitor</SectionLabel>
         {NAV.map(({ href, label, icon: Icon }) => (
           <NavItem key={href} href={href} label={label} Icon={Icon} active={path.startsWith(href)} />
         ))}
 
-        <p className="text-[10px] uppercase tracking-widest text-ink-muted font-semibold px-3 mt-5 mb-2">Manage</p>
+        <SectionLabel>Manage</SectionLabel>
         {MANAGE.map(({ href, label, icon: Icon }) => (
           <NavItem key={href} href={href} label={label} Icon={Icon} active={path.startsWith(href)} />
         ))}
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-4 border-t border-border space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs text-ink-muted">Bot active</span>
+      <div className="px-3 py-4 border-t border-white/8 space-y-1">
+        <div className="flex items-center gap-2 px-3 py-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs text-slate-500">Bot active</span>
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm text-ink-secondary hover:text-red-500 hover:bg-red-50 transition-all"
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-slate-500 hover:text-red-400 hover:bg-white/5 transition-all duration-150"
         >
           <LogOut size={14} />
           Sign out
