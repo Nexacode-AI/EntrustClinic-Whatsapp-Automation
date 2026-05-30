@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import { api } from '../lib/api'
-import { Send, AlertTriangle } from 'lucide-react'
+import { Send, AlertTriangle, Phone } from 'lucide-react'
 
 export default function ConversationView({ phone, messages }) {
   const [input, setInput] = useState('')
@@ -27,32 +27,37 @@ export default function ConversationView({ phone, messages }) {
   }
 
   return (
-    <div className="bg-card rounded-xl border border-border flex flex-col h-full shadow-sm">
+    <div className="bg-white rounded-xl border border-slate-200 flex flex-col h-full shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-        <div>
-          <p className="font-semibold text-ink">{phone}</p>
-          <p className="text-xs text-ink-muted">WhatsApp conversation</p>
+      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center">
+            <Phone size={14} className="text-teal-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-slate-800 text-sm">{phone}</p>
+            <p className="text-xs text-slate-400">WhatsApp conversation</p>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg">
-          <AlertTriangle size={12} />
-          Free-form messages only within 24h of patient's last message
+          <AlertTriangle size={11} />
+          24h window only
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-slate-50/50">
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3" style={{ backgroundColor: '#F8FAFC' }}>
         {localMessages.length === 0 ? (
-          <p className="text-center text-ink-muted text-sm py-10">No messages yet</p>
+          <p className="text-center text-slate-400 text-sm py-10">No messages yet</p>
         ) : localMessages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm shadow-sm ${
               msg.direction === 'outbound'
-                ? 'bg-brand text-white rounded-br-sm'
-                : 'bg-white border border-border text-ink rounded-bl-sm'
+                ? 'bg-teal-600 text-white rounded-br-sm'
+                : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm'
             }`}>
-              <p className="whitespace-pre-wrap">{msg.body}</p>
-              <p className={`text-xs mt-1 ${msg.direction === 'outbound' ? 'text-white/70' : 'text-ink-muted'}`}>
+              <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
+              <p className={`text-xs mt-1.5 ${msg.direction === 'outbound' ? 'text-teal-200' : 'text-slate-400'}`}>
                 {dayjs(msg.created_at).format('h:mm A')}
               </p>
             </div>
@@ -61,15 +66,15 @@ export default function ConversationView({ phone, messages }) {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} className="px-5 py-4 border-t border-border flex gap-3">
+      <form onSubmit={handleSend} className="px-5 py-4 border-t border-slate-100 flex gap-3 bg-white">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message to this patient..."
-          className="flex-1 bg-white border border-border rounded-xl px-4 py-2 text-sm text-ink placeholder-ink-muted focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+          placeholder="Type a message..."
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
         />
         <button type="submit" disabled={sending || !input.trim()}
-          className="flex items-center gap-2 px-4 py-2 bg-brand hover:bg-brand-dark disabled:opacity-40 rounded-xl text-white text-sm font-semibold transition-colors">
+          className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-40 rounded-xl text-white text-sm font-semibold transition-colors shadow-sm">
           <Send size={14} /> {sending ? '…' : 'Send'}
         </button>
       </form>

@@ -3,7 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { api } from '../../lib/api'
 import ConversationView from '../../components/ConversationView'
-import { MessageSquare, Trash2 } from 'lucide-react'
+import { MessageSquare, Trash2, Search } from 'lucide-react'
 
 function ConversationsInner() {
   const searchParams = useSearchParams()
@@ -46,44 +46,51 @@ function ConversationsInner() {
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4">
       {/* Left — list */}
-      <div className="w-72 shrink-0 bg-card rounded-xl border border-border overflow-y-auto shadow-sm">
-        <div className="px-4 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <MessageSquare size={15} className="text-brand" />
-            <p className="font-semibold text-sm text-ink">Conversations</p>
+      <div className="w-72 shrink-0 bg-white rounded-xl border border-slate-200 flex flex-col shadow-sm overflow-hidden">
+        <div className="px-4 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare size={14} className="text-teal-600" />
+            <p className="font-semibold text-sm text-slate-800">Conversations</p>
+            <span className="ml-auto text-xs text-slate-400">{conversations.length}</span>
           </div>
         </div>
-        {conversations.length === 0 ? (
-          <p className="text-center text-ink-muted text-sm py-10">No conversations yet</p>
-        ) : conversations.map((c) => (
-          <a
-            key={c.phone}
-            href={`/conversations?phone=${encodeURIComponent(c.phone)}`}
-            className={`group flex items-start justify-between px-4 py-3 border-b border-border transition-colors ${
-              selectedPhone === c.phone
-                ? 'bg-brand/5 border-l-2 border-l-brand'
-                : 'hover:bg-muted'
-            }`}
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between mb-0.5">
-                <p className="text-sm font-semibold text-ink truncate">{c.patients?.name || c.phone}</p>
-                {c.is_escalated && (
-                  <span className="text-xs bg-red-100 text-red-500 border border-red-200 px-1.5 py-0.5 rounded-full font-bold ml-1">!</span>
-                )}
-              </div>
-              <p className="text-xs text-ink-muted font-mono truncate">{c.phone}</p>
-              <p className="text-xs text-ink-muted mt-0.5 capitalize">{c.state?.toLowerCase().replace(/_/g, ' ')}</p>
+
+        <div className="flex-1 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <Search size={20} className="text-slate-300 mb-2" />
+              <p className="text-sm text-slate-400">No conversations yet</p>
             </div>
-            <button
-              onClick={(e) => deleteConversation(c.phone, e)}
-              className="opacity-0 group-hover:opacity-100 ml-2 mt-0.5 p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50 transition-all shrink-0"
-              title="Delete conversation"
+          ) : conversations.map((c) => (
+            <a
+              key={c.phone}
+              href={`/conversations?phone=${encodeURIComponent(c.phone)}`}
+              className={`group flex items-start justify-between px-4 py-3.5 border-b border-slate-100 transition-colors outline-none ${
+                selectedPhone === c.phone
+                  ? 'bg-teal-50 border-l-2 border-l-teal-500'
+                  : 'hover:bg-slate-50'
+              }`}
             >
-              <Trash2 size={13} />
-            </button>
-          </a>
-        ))}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between mb-0.5">
+                  <p className="text-sm font-semibold text-slate-800 truncate">{c.patients?.name || c.phone}</p>
+                  {c.is_escalated && (
+                    <span className="text-xs bg-red-100 text-red-500 border border-red-200 px-1.5 py-0.5 rounded-full font-bold ml-1 shrink-0">!</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 font-mono truncate">{c.phone}</p>
+                <p className="text-xs text-slate-400 mt-0.5 capitalize">{c.state?.toLowerCase().replace(/_/g, ' ')}</p>
+              </div>
+              <button
+                onClick={(e) => deleteConversation(c.phone, e)}
+                className="opacity-0 group-hover:opacity-100 ml-2 mt-0.5 p-1 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
+                title="Delete conversation"
+              >
+                <Trash2 size={12} />
+              </button>
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Right — chat */}
@@ -91,19 +98,19 @@ function ConversationsInner() {
         {selectedPhone
           ? <ConversationView phone={selectedPhone} messages={messages} />
           : (
-            <div className="h-full flex flex-col items-center justify-center bg-card rounded-xl border border-border shadow-sm">
-              <MessageSquare size={36} className="text-slate-300 mb-3" />
-              <p className="text-ink-secondary font-medium">Select a conversation</p>
-              <p className="text-sm text-ink-muted mt-1">Choose a patient from the left to view messages</p>
+            <div className="h-full flex flex-col items-center justify-center bg-white rounded-xl border border-slate-200 shadow-sm">
+              <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                <MessageSquare size={22} className="text-slate-400" />
+              </div>
+              <p className="text-slate-700 font-semibold">Select a conversation</p>
+              <p className="text-sm text-slate-400 mt-1">Choose a patient from the left to view messages</p>
             </div>
           )
         }
       </div>
 
       {toast && (
-        <div className={`fixed bottom-6 right-6 flex items-center gap-2 text-sm px-4 py-3 rounded-xl border shadow-lg bg-card z-50 ${
-          toast.ok ? 'border-emerald-200 text-emerald-700' : 'border-red-200 text-red-700'
-        }`}>
+        <div className={`fixed bottom-6 right-6 flex items-center gap-2 text-sm px-4 py-3 rounded-xl border shadow-lg bg-white z-50 ${toast.ok ? 'border-emerald-200 text-emerald-700' : 'border-red-200 text-red-700'}`}>
           <span className="font-bold">{toast.ok ? '✓' : '✗'}</span> {toast.msg}
         </div>
       )}
