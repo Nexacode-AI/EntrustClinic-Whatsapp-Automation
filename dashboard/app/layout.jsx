@@ -1,18 +1,24 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
 import Sidebar from '../components/Sidebar'
 
-const inter = Inter({ subsets: ['latin'] })
-
-export const metadata = { title: 'Entrust Clinic — Dashboard' }
+export const metadata = {
+  title: 'Entrust Clinic — Management System',
+  description: 'Production-grade clinic management for Malaysian private clinics',
+}
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} flex h-screen overflow-hidden`} style={{ backgroundColor: '#f8fafc' }}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body className="flex h-screen overflow-hidden bg-page">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8">
-          {children}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-screen-2xl mx-auto px-6 py-6 lg:px-8 lg:py-7">
+            {children}
+          </div>
         </main>
       </body>
     </html>
