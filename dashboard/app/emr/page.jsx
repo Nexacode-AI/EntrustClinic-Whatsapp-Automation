@@ -237,7 +237,7 @@ function ConsultTab({ consult, onSave }) {
               {diagResults.slice(0, 6).map(r => (
                 <button key={r.code} onClick={() => addDiag(r)} className="w-full text-left px-3 py-2 hover:bg-muted text-sm flex gap-2">
                   <span className="font-mono text-brand font-semibold">{r.code}</span>
-                  <span className="text-ink">{r.description}</span>
+                  <span className="text-ink">{r.desc}</span>
                 </button>
               ))}
             </div>
@@ -247,7 +247,7 @@ function ConsultTab({ consult, onSave }) {
           <div className="flex flex-wrap gap-2 mt-2">
             {form.diagnoses_json.map(d => (
               <span key={d.code} className="badge badge-blue flex items-center gap-1">
-                <span className="font-mono">{d.code}</span> {d.description}
+                <span className="font-mono">{d.code}</span> {d.desc}
                 <button onClick={() => removeDiag(d.code)}><X size={10} /></button>
               </span>
             ))}
@@ -372,7 +372,8 @@ function PrescriptionsTab({ consultId }) {
   const [searchIdx, setSearchIdx] = useState(null)
 
   useEffect(() => {
-    api.consultations({ id: consultId }).then(() => {}).catch(() => {})
+    if (!consultId) return
+    api.consultation(consultId).then(c => setPrescriptions(c?.prescriptions || [])).catch(() => {})
   }, [consultId])
 
   async function searchDrug(q, idx) {
@@ -476,7 +477,7 @@ function HistoryTab({ patientId }) {
           {h.chief_complaint && <p className="text-sm text-ink-muted"><span className="font-medium text-ink">CC:</span> {h.chief_complaint}</p>}
           {h.diagnoses_json?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
-              {h.diagnoses_json.map(d => <span key={d.code} className="badge badge-blue text-xs">{d.code} {d.description}</span>)}
+              {h.diagnoses_json.map(d => <span key={d.code} className="badge badge-blue text-xs">{d.code} {d.desc || d.description}</span>)}
             </div>
           )}
           {h.mc_days > 0 && <p className="text-xs text-ink-faint mt-1">MC: {h.mc_days} days</p>}

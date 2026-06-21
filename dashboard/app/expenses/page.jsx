@@ -15,7 +15,7 @@ export default function ExpensesPage() {
   const [loading, setLoading] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
   const [month, setMonth] = useState(dayjs().format('YYYY-MM'))
-  const [form, setForm] = useState({ category_id: '', description: '', amount: '', expense_date: dayjs().format('YYYY-MM-DD'), vendor: '', receipt_number: '' })
+  const [form, setForm] = useState({ category_id: '', description: '', amount: '', date: dayjs().format('YYYY-MM-DD'), vendor: '', receipt_number: '' })
 
   useEffect(() => { loadAll() }, [month])
 
@@ -27,7 +27,7 @@ export default function ExpensesPage() {
         api.expenseSummary({ month }),
         api.profitLoss({ month }),
       ])
-      setExpenses(e || [])
+      setExpenses(e?.data || e || [])
       setCategories(c || [])
       setSummary(s || {})
       setPl(p || {})
@@ -38,7 +38,7 @@ export default function ExpensesPage() {
   async function handleAdd() {
     await api.createExpense(form)
     setAddOpen(false)
-    setForm({ category_id: '', description: '', amount: '', expense_date: dayjs().format('YYYY-MM-DD'), vendor: '', receipt_number: '' })
+    setForm({ category_id: '', description: '', amount: '', date: dayjs().format('YYYY-MM-DD'), vendor: '', receipt_number: '' })
     loadAll()
   }
 
@@ -98,7 +98,7 @@ export default function ExpensesPage() {
               <tbody>
                 {expenses.map(e => (
                   <tr key={e.id}>
-                    <td className="text-sm text-ink-muted">{dayjs(e.expense_date).format('D MMM')}</td>
+                    <td className="text-sm text-ink-muted">{dayjs(e.date).format('D MMM')}</td>
                     <td><span className="badge badge-gray text-xs">{e.expense_categories?.name || '—'}</span></td>
                     <td className="text-sm">{e.description}</td>
                     <td className="text-sm text-ink-muted">{e.vendor}</td>
@@ -159,7 +159,7 @@ export default function ExpensesPage() {
           </div>
           <div className="form-group">
             <label className="form-label">Date</label>
-            <input type="date" className="form-input" value={form.expense_date} onChange={e => setForm(f => ({ ...f, expense_date: e.target.value }))} />
+            <input type="date" className="form-input" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
           </div>
           <div className="form-group">
             <label className="form-label">Vendor</label>

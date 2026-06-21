@@ -145,7 +145,7 @@ export default function PayrollPage() {
                             <p className="text-2xs text-ink-faint capitalize">{item.staff_profiles?.role}</p>
                           </td>
                           <td className="text-sm font-semibold">RM {parseFloat(item.basic_salary || 0).toFixed(2)}</td>
-                          <td className="text-sm text-success-dark">+RM {parseFloat(item.commission || 0).toFixed(2)}</td>
+                          <td className="text-sm text-success-dark">+RM {parseFloat(item.commissions || 0).toFixed(2)}</td>
                           <td className="text-sm text-danger-dark">-RM {parseFloat(item.epf_employee || 0).toFixed(2)}</td>
                           <td className="text-sm text-brand">RM {parseFloat(item.epf_employer || 0).toFixed(2)}</td>
                           <td className="text-sm text-danger-dark">-RM {parseFloat(item.socso_employee || 0).toFixed(2)}</td>

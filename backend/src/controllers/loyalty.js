@@ -77,7 +77,7 @@ export async function createReward(req, res) {
 
 export async function getTransactions(req, res) {
   const { patient_id, limit = 30 } = req.query
-  let query = supabase.from('loyalty_transactions').select('*').order('created_at', { ascending: false }).limit(Number(limit))
+  let query = supabase.from('loyalty_transactions').select('*, patients(name, phone)').order('created_at', { ascending: false }).limit(Number(limit))
   if (patient_id) query = query.eq('patient_id', patient_id)
   const { data, error } = await query
   if (error) return res.status(500).json({ error: error.message })

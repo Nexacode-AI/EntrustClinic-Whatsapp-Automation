@@ -25,7 +25,7 @@ export default function PanelPage() {
     try {
       const [p, c, a] = await Promise.all([api.panels(), api.panelClaims(), api.claimAging()])
       setPanels(p || [])
-      setClaims(c || [])
+      setClaims(c?.data || c || [])
       setAging(a || {})
     } catch {}
     setLoading(false)

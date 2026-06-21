@@ -46,9 +46,14 @@ export default function BillingPage() {
   }
 
   async function handlePayment() {
-    await api.updatePayment(selectedInv.id, payForm)
-    setPayOpen(false)
-    load()
+    try {
+      await api.updatePayment(selectedInv.id, {
+        ...payForm,
+        paid_amount: parseFloat(payForm.amount_paid) || selectedInv.total,
+      })
+      setPayOpen(false)
+      load()
+    } catch {}
   }
 
   const filtered = invoices.filter(inv =>
@@ -138,7 +143,7 @@ export default function BillingPage() {
                       <td><Badge status={inv.payment_status} /></td>
                       <td>
                         <div className="flex gap-1">
-                          {inv.status !== 'paid' && (
+                          {inv.payment_status !== 'paid' && (
                             <button onClick={() => openPayment(inv)} className="btn-primary btn-xs">
                               <Check size={11} /> Pay
                             </button>
@@ -187,7 +192,7 @@ export default function BillingPage() {
         <div className="space-y-4">
           <div className="bg-muted rounded-xl p-3 flex justify-between">
             <span className="text-sm text-ink-muted">Total Due</span>
-            <span className="font-black text-ink">RM {parseFloat(selectedInv?.total_amount || 0).toFixed(2)}</span>
+            <span className="font-black text-ink">RM {parseFloat(selectedInv?.total || 0).toFixed(2)}</span>
           </div>
           <div className="form-group">
             <label className="form-label">Payment Method</label>
@@ -221,9 +226,12 @@ function CreateInvoiceModal({ open, onClose, onCreated }) {
   const [panels, setPanels] = useState([])
   const [form, setForm] = useState({ patient_id: '', panel_id: '', discount_amount: 0, notes: '' })
   const [items, setItems] = useState([{ description: '', quantity: 1, unit_price: 0 }])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (open) {
+      setError('')
       Promise.all([api.patients(), api.panels()]).then(([p, pan]) => {
         setPatients(p || [])
         setPanels(pan || [])
@@ -239,16 +247,34 @@ function CreateInvoiceModal({ open, onClose, onCreated }) {
   const total = subtotal - (parseFloat(form.discount_amount) || 0)
 
   async function handleCreate() {
-    await api.createInvoice({ ...form, items })
-    onClose()
-    onCreated()
+    if (!form.patient_id) { setError('Please select a patient.'); return }
+    if (items.every(i => !i.description)) { setError('Add at least one line item.'); return }
+    setSaving(true)
+    setError('')
+    try {
+      const payload = {
+        ...form,
+        panel_id: form.panel_id || null,
+        discount_value: parseFloat(form.discount_amount) || 0,
+        items,
+      }
+      await api.createInvoice(payload)
+      onClose()
+      onCreated()
+    } catch (e) {
+      setError(e?.message || 'Failed to create invoice. Please try again.')
+    }
+    setSaving(false)
   }
 
   return (
     <Modal open={open} onClose={onClose} title="New Invoice" size="lg" footer={
-      <><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={handleCreate} className="btn-primary">Create Invoice</button></>
+      <><button onClick={onClose} className="btn-secondary">Cancel</button><button onClick={handleCreate} disabled={saving} className="btn-primary">{saving ? 'Creating...' : 'Create Invoice'}</button></>
     }>
       <div className="space-y-4">
+        {error && (
+          <div className="bg-danger-light border border-danger/20 text-danger-dark text-sm rounded-lg px-3 py-2">{error}</div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <div className="form-group">
             <label className="form-label">Patient</label>

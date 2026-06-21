@@ -27,7 +27,9 @@ export default function QueuePage() {
   const [doctors, setDoctors] = useState([])
   const [patients, setPatients] = useState([])
   const [addOpen, setAddOpen] = useState(false)
+  const [isNewPatient, setIsNewPatient] = useState(false)
   const [form, setForm] = useState({ patient_id: '', doctor_id: '', triage: 'normal', reason: '' })
+  const [newPatientForm, setNewPatientForm] = useState({ name: '', phone: '', ic_number: '', gender: 'male' })
 
   const load = useCallback(async () => {
     try {
@@ -53,10 +55,18 @@ export default function QueuePage() {
   }
 
   async function handleAddQueue() {
-    if (!form.patient_id) return
-    await api.addQueue(form)
+    let patientId = form.patient_id
+    if (isNewPatient) {
+      if (!newPatientForm.name || !newPatientForm.phone) return
+      const newP = await api.createPatient(newPatientForm)
+      patientId = newP.id
+    }
+    if (!patientId) return
+    await api.addQueue({ ...form, patient_id: patientId })
     setAddOpen(false)
+    setIsNewPatient(false)
     setForm({ patient_id: '', doctor_id: '', triage: 'normal', reason: '' })
+    setNewPatientForm({ name: '', phone: '', ic_number: '', gender: 'male' })
     load()
   }
 
@@ -140,29 +150,79 @@ export default function QueuePage() {
       {/* Add Walk-in Modal */}
       <Modal
         open={addOpen}
-        onClose={() => setAddOpen(false)}
+        onClose={() => { setAddOpen(false); setIsNewPatient(false) }}
         title="Add Walk-in Patient"
         footer={
           <>
-            <button onClick={() => setAddOpen(false)} className="btn-secondary">Cancel</button>
+            <button onClick={() => { setAddOpen(false); setIsNewPatient(false) }} className="btn-secondary">Cancel</button>
             <button onClick={handleAddQueue} className="btn-primary">Add to Queue</button>
           </>
         }
       >
         <div className="space-y-4">
-          <div className="form-group">
-            <label className="form-label">Patient</label>
-            <select
-              className="form-select"
-              value={form.patient_id}
-              onChange={e => setForm(f => ({ ...f, patient_id: e.target.value }))}
+
+          {/* Toggle */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setIsNewPatient(false)}
+              className={`flex-1 py-2 text-sm font-semibold transition-all ${!isNewPatient ? 'bg-brand text-white' : 'bg-white text-ink-muted hover:bg-muted'}`}
             >
-              <option value="">Select patient...</option>
-              {patients.map(p => (
-                <option key={p.id} value={p.id}>{p.name} — {p.phone}</option>
-              ))}
-            </select>
+              Existing Patient
+            </button>
+            <button
+              onClick={() => setIsNewPatient(true)}
+              className={`flex-1 py-2 text-sm font-semibold transition-all ${isNewPatient ? 'bg-brand text-white' : 'bg-white text-ink-muted hover:bg-muted'}`}
+            >
+              New Patient
+            </button>
           </div>
+
+          {/* Existing patient select */}
+          {!isNewPatient && (
+            <div className="form-group">
+              <label className="form-label">Select Patient</label>
+              <select
+                className="form-select"
+                value={form.patient_id}
+                onChange={e => setForm(f => ({ ...f, patient_id: e.target.value }))}
+              >
+                <option value="">Search patient...</option>
+                {patients.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} — {p.phone}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* New patient fields */}
+          {isNewPatient && (
+            <div className="space-y-3 p-3 bg-muted rounded-xl border border-border">
+              <p className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Patient Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="form-group col-span-2">
+                  <label className="form-label">Full Name <span className="text-danger">*</span></label>
+                  <input className="form-input" placeholder="e.g. Ahmad bin Razak" value={newPatientForm.name} onChange={e => setNewPatientForm(f => ({ ...f, name: e.target.value }))} />
+                </div>
+                <div className="form-group col-span-2">
+                  <label className="form-label">Phone Number <span className="text-danger">*</span></label>
+                  <input className="form-input" placeholder="e.g. +60123456789" value={newPatientForm.phone} onChange={e => setNewPatientForm(f => ({ ...f, phone: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">IC Number</label>
+                  <input className="form-input" placeholder="e.g. 901234-01-5678" value={newPatientForm.ic_number} onChange={e => setNewPatientForm(f => ({ ...f, ic_number: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Gender</label>
+                  <select className="form-select" value={newPatientForm.gender} onChange={e => setNewPatientForm(f => ({ ...f, gender: e.target.value }))}>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Doctor */}
           <div className="form-group">
             <label className="form-label">Doctor</label>
             <select className="form-select" value={form.doctor_id} onChange={e => setForm(f => ({ ...f, doctor_id: e.target.value }))}>
@@ -170,6 +230,8 @@ export default function QueuePage() {
               {doctors.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
+
+          {/* Triage */}
           <div className="form-group">
             <label className="form-label">Triage</label>
             <div className="flex gap-2">
@@ -190,6 +252,8 @@ export default function QueuePage() {
               ))}
             </div>
           </div>
+
+          {/* Reason */}
           <div className="form-group">
             <label className="form-label">Reason / Chief Complaint</label>
             <input className="form-input" placeholder="Brief reason for visit" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} />

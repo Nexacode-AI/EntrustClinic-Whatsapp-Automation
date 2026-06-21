@@ -123,7 +123,7 @@ export default function LoyaltyPage() {
                 <tbody>
                   {transactions.map(tx => (
                     <tr key={tx.id}>
-                      <td className="font-semibold text-sm">{tx.patient_loyalty?.patients?.name}</td>
+                      <td className="font-semibold text-sm">{tx.patients?.name || tx.patient_loyalty?.patients?.name}</td>
                       <td><Badge status={tx.type === 'earn' ? 'active' : 'inactive'} label={tx.type === 'earn' ? 'Earned' : 'Redeemed'} /></td>
                       <td>
                         <span className={`font-bold text-sm ${tx.type === 'earn' ? 'text-success-dark' : 'text-danger-dark'}`}>

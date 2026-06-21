@@ -3,7 +3,7 @@ import { apiAuth } from '../middleware/auth.js'
 
 // Existing controllers
 import { listAppointments, getAppointment, updateAppointmentStatus, getMonthlyStats } from '../controllers/appointments.js'
-import { listPatients, getPatient, updatePatient, deletePatient } from '../controllers/patients.js'
+import { listPatients, createPatient, getPatient, updatePatient, deletePatient } from '../controllers/patients.js'
 import { listConversations, getMessages, deleteConversation, resolveEscalation as resolveConvEscalation } from '../controllers/conversations.js'
 import { listEscalations, resolveEscalation } from '../controllers/escalations.js'
 import { getDashboardStats } from '../controllers/analytics.js'
@@ -39,6 +39,7 @@ router.get('/appointments/:id', getAppointment)
 router.patch('/appointments/:id/status', updateAppointmentStatus)
 
 router.get('/patients', listPatients)
+router.post('/patients', createPatient)
 router.get('/patients/:id', getPatient)
 router.patch('/patients/:id', updatePatient)
 router.delete('/patients/:id', deletePatient)
@@ -144,8 +145,8 @@ router.patch('/panels/:id', updatePanel)
 router.put('/panels/:id/fees', setPanelFees)
 
 router.get('/panel-claims', listClaims)
-router.patch('/panel-claims/:id/status', updateClaimStatus)
 router.get('/panel-claims/aging', getClaimAging)
+router.patch('/panel-claims/:id/status', updateClaimStatus)
 
 // ── FOMEMA ─────────────────────────────────────────────────────────────────────
 router.get('/fomema/stats', getFomemaStats)
@@ -182,8 +183,8 @@ router.get('/payroll/:runId/payslip/:staffId', getPayslip)
 // ── PACKAGES ───────────────────────────────────────────────────────────────────
 router.get('/package-plans', listPlans)
 router.post('/package-plans', createPlan)
-router.patch('/package-plans/:id', updatePlan)
 router.get('/package-plans/stats', getPackageStats)
+router.patch('/package-plans/:id', updatePlan)
 
 router.post('/patient-packages', sellPackage)
 router.post('/patient-packages/:id/redeem', redeemSession)
@@ -198,11 +199,11 @@ router.get('/loyalty/transactions', getTransactions)
 // ── EXPENSES ───────────────────────────────────────────────────────────────────
 router.get('/expenses', listExpenses)
 router.post('/expenses', createExpense)
+router.get('/expenses/summary', getExpenseSummary)
+router.get('/expenses/profit-loss', getProfitLoss)
 router.patch('/expenses/:id', updateExpense)
 router.delete('/expenses/:id', deleteExpense)
 router.get('/expense-categories', listCategories)
-router.get('/expenses/summary', getExpenseSummary)
-router.get('/expenses/profit-loss', getProfitLoss)
 
 // ── TELEMEDICINE ───────────────────────────────────────────────────────────────
 router.get('/video-rooms', listVideoRooms)

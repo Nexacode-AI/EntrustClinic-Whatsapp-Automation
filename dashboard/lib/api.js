@@ -55,6 +55,7 @@ export const api = {
   // Patients
   patients:         (p = {}) => g(`/patients${qs(p)}`),
   patient:          (id)     => g(`/patients/${id}`),
+  createPatient:    (b)      => po('/patients', b),
   updatePatient:    (id, b)  => pa(`/patients/${id}`, b),
   deletePatient:    (id)     => d(`/patients/${id}`),
 

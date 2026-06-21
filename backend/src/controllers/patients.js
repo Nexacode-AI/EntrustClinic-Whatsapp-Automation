@@ -19,6 +19,14 @@ export async function listPatients(req, res) {
   res.json(data)
 }
 
+export async function createPatient(req, res) {
+  const { name, phone, ic_number, date_of_birth, gender, language = 'en' } = req.body
+  if (!phone) return res.status(400).json({ error: 'phone required' })
+  const { data, error } = await db.from('patients').insert({ name, phone, ic_number, date_of_birth, gender, language }).select().single()
+  if (error) return res.status(500).json({ error: error.message })
+  res.status(201).json(data)
+}
+
 export async function updatePatient(req, res) {
   const { id } = req.params
   const { name, language } = req.body
