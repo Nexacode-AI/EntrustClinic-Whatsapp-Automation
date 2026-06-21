@@ -1,8 +1,8 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 
 // Get all settings
 export async function getSettings(req, res) {
-  const { data, error } = await db.from('clinic_settings').select('key, value')
+  const { data, error } = await supabase.from('clinic_settings').select('key, value')
   if (error) return res.status(500).json({ error: error.message })
   // Convert array to object, hide sensitive fields
   const settings = {}
@@ -33,14 +33,14 @@ export async function updateSetting(req, res) {
 
 // Get clinic profile
 export async function getClinicProfile(req, res) {
-  const { data } = await db.from('clinic_settings').select('value').eq('key', 'clinic_profile').maybeSingle()
+  const { data } = await supabase.from('clinic_settings').select('value').eq('key', 'clinic_profile').maybeSingle()
   res.json(data?.value || {})
 }
 
 // Check which external services are connected
 export async function getIntegrationStatus(req, res) {
   const keys = ['twilio', 'meta', 'google_calendar', 'mims', 'lhdn', 'medilink', 'fomema_credentials', 'payment_gateway']
-  const { data } = await db.from('clinic_settings').select('key, value').in('key', keys)
+  const { data } = await supabase.from('clinic_settings').select('key, value').in('key', keys)
 
   const status = {}
   ;(data || []).forEach(row => {

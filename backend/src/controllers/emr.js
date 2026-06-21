@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 
 // ── CONSULTATIONS ────────────────────────────────────────────────────────────
 
@@ -143,7 +143,7 @@ export async function createPrescription(req, res) {
 
   if (items.length > 0) {
     const rxItems = items.map(item => ({ ...item, prescription_id: rx.id }))
-    const { error: itemErr } = await db.from('prescription_items').insert(rxItems)
+    const { error: itemErr } = await supabase.from('prescription_items').insert(rxItems)
     if (itemErr) return res.status(500).json({ error: itemErr.message })
   }
 

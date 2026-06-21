@@ -31,10 +31,11 @@ export default function QueuePage() {
 
   const load = useCallback(async () => {
     try {
-      const [q, s, d] = await Promise.all([api.queue(), api.queueStats(), api.doctors()])
+      const [q, s, d, p] = await Promise.all([api.queue(), api.queueStats(), api.doctors(), api.patients()])
       setQueue(q || [])
       setStats(s || {})
       setDoctors(d || [])
+      setPatients(p || [])
     } catch {}
     setLoading(false)
   }, [])
@@ -150,13 +151,17 @@ export default function QueuePage() {
       >
         <div className="space-y-4">
           <div className="form-group">
-            <label className="form-label">Patient Phone / Search</label>
-            <input
-              className="form-input"
-              placeholder="Enter patient phone number"
+            <label className="form-label">Patient</label>
+            <select
+              className="form-select"
               value={form.patient_id}
               onChange={e => setForm(f => ({ ...f, patient_id: e.target.value }))}
-            />
+            >
+              <option value="">Select patient...</option>
+              {patients.map(p => (
+                <option key={p.id} value={p.id}>{p.name} — {p.phone}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label className="form-label">Doctor</label>

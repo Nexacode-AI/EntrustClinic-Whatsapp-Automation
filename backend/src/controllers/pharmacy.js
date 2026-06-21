@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 
 // Get prescriptions pending dispensing
 export async function getPendingPrescriptions(req, res) {
@@ -53,11 +53,12 @@ export async function dispenseItem(req, res) {
 
   // Deduct stock
   if (batch_id && quantity_dispensed) {
-    const { data: batch } = await db.from('stock_batches').select('quantity, item_id').eq('id', batch_id).single()
+    const { data: batch } = await supabase.from('stock_batches').select('quantity, item_id').eq('id', batch_id).single()
     if (batch) {
-      await db.from('stock_batches').update({ quantity: Math.max(0, batch.quantity - quantity_dispensed) }).eq('id', batch_id)
-      await db.from('stock_items').update({ current_stock: db.raw(`current_stock - ${quantity_dispensed}`) }).eq('id', batch.item_id)
-      await db.from('stock_movements').insert({
+      await supabase.from('stock_batches').update({ quantity: Math.max(0, batch.quantity - quantity_dispensed) }).eq('id', batch_id)
+      const { data: si } = await supabase.from('stock_items').select('current_stock').eq('id', batch.item_id).single()
+      await supabase.from('stock_items').update({ current_stock: Math.max(0, (si?.current_stock || 0) - quantity_dispensed) }).eq('id', batch.item_id)
+      await supabase.from('stock_movements').insert({
         item_id: batch.item_id, batch_id, type: 'out', quantity: quantity_dispensed,
         reference_id: item.prescription_id, reference_type: 'prescription',
       })

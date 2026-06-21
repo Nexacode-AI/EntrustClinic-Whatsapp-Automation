@@ -19,8 +19,8 @@ export default function StaffPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [clockForm, setClockForm] = useState({ staff_id: '' })
-  const [form, setForm] = useState({ name: '', role: 'nurse', ic_number: '', phone: '', email: '', salary: '', commission_rate: '' })
-  const [leaveForm, setLeaveForm] = useState({ staff_id: '', leave_type: 'annual', start_date: '', end_date: '', reason: '' })
+  const [form, setForm] = useState({ name: '', role: 'nurse', ic_number: '', phone: '', email: '', salary_basic: '', commission_rate: '' })
+  const [leaveForm, setLeaveForm] = useState({ staff_id: '', type: 'annual', start_date: '', end_date: '', reason: '' })
 
   useEffect(() => { loadAll() }, [])
 
@@ -37,7 +37,7 @@ export default function StaffPage() {
   async function handleAdd() {
     await api.createStaff(form)
     setAddOpen(false)
-    setForm({ name: '', role: 'nurse', ic_number: '', phone: '', email: '', salary: '', commission_rate: '' })
+    setForm({ name: '', role: 'nurse', ic_number: '', phone: '', email: '', salary_basic: '', commission_rate: '' })
     loadAll()
   }
 
@@ -120,7 +120,7 @@ export default function StaffPage() {
                         <td><span className="badge badge-gray capitalize">{s.role}</span></td>
                         <td className="font-mono text-sm">{s.ic_number}</td>
                         <td className="text-sm text-ink-muted">{s.phone}</td>
-                        <td className="font-semibold text-sm">RM {parseFloat(s.salary || 0).toFixed(2)}</td>
+                        <td className="font-semibold text-sm">RM {parseFloat(s.salary_basic || 0).toFixed(2)}</td>
                         <td>
                           {isClockedIn
                             ? <span className="badge badge-green">Clocked In</span>
@@ -176,7 +176,7 @@ export default function StaffPage() {
                   {leaves.map(l => (
                     <tr key={l.id}>
                       <td className="font-semibold text-sm">{l.staff_profiles?.name}</td>
-                      <td><span className="badge badge-blue capitalize">{l.leave_type?.replace(/_/g, ' ')}</span></td>
+                      <td><span className="badge badge-blue capitalize">{(l.type || l.leave_type)?.replace(/_/g, ' ')}</span></td>
                       <td className="text-sm">{dayjs(l.start_date).format('D MMM YYYY')}</td>
                       <td className="text-sm">{dayjs(l.end_date).format('D MMM YYYY')}</td>
                       <td className="text-sm text-ink-muted max-w-xs truncate">{l.reason}</td>
@@ -224,7 +224,7 @@ export default function StaffPage() {
           </div>
           <div className="form-group">
             <label className="form-label">Monthly Salary (RM)</label>
-            <input type="number" step="0.01" className="form-input" value={form.salary} onChange={e => setForm(f => ({ ...f, salary: e.target.value }))} />
+            <input type="number" step="0.01" className="form-input" value={form.salary_basic} onChange={e => setForm(f => ({ ...f, salary_basic: e.target.value }))} />
           </div>
           <div className="form-group">
             <label className="form-label">Commission Rate (%)</label>
@@ -247,7 +247,7 @@ export default function StaffPage() {
           </div>
           <div className="form-group">
             <label className="form-label">Leave Type</label>
-            <select className="form-select" value={leaveForm.leave_type} onChange={e => setLeaveForm(f => ({ ...f, leave_type: e.target.value }))}>
+            <select className="form-select" value={leaveForm.type} onChange={e => setLeaveForm(f => ({ ...f, type: e.target.value }))}>
               {['annual','sick','emergency','maternity','paternity','unpaid'].map(t => <option key={t} value={t} className="capitalize">{t.replace(/_/g, ' ')}</option>)}
             </select>
           </div>

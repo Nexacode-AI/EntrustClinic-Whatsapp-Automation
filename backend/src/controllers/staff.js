@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 import dayjs from 'dayjs'
 
 // ── STAFF PROFILES ────────────────────────────────────────────────────────────

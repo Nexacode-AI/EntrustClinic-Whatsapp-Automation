@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 import dayjs from 'dayjs'
 
 // Get today's queue
@@ -127,7 +127,7 @@ export async function getQueueStats(req, res) {
 // Delete queue entry
 export async function removeFromQueue(req, res) {
   const { id } = req.params
-  const { error } = await db.from('queue_entries').delete().eq('id', id)
+  const { error } = await supabase.from('queue_entries').delete().eq('id', id)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true })
 }

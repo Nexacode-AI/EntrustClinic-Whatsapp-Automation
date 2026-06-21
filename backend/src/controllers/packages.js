@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 import dayjs from 'dayjs'
 
 // ── PACKAGE PLANS ─────────────────────────────────────────────────────────────
@@ -15,14 +15,14 @@ export async function listPlans(req, res) {
 }
 
 export async function createPlan(req, res) {
-  const { data, error } = await db.from('package_plans').insert(req.body).select().single()
+  const { data, error } = await supabase.from('package_plans').insert(req.body).select().single()
   if (error) return res.status(500).json({ error: error.message })
   res.status(201).json(data)
 }
 
 export async function updatePlan(req, res) {
   const { id } = req.params
-  const { data, error } = await db.from('package_plans').update(req.body).eq('id', id).select().single()
+  const { data, error } = await supabase.from('package_plans').update(req.body).eq('id', id).select().single()
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }
@@ -44,7 +44,7 @@ export async function getPatientPackages(req, res) {
 export async function sellPackage(req, res) {
   const { patient_id, plan_id, invoice_id } = req.body
 
-  const { data: plan } = await db.from('package_plans').select('*').eq('id', plan_id).single()
+  const { data: plan } = await supabase.from('package_plans').select('*').eq('id', plan_id).single()
   if (!plan) return res.status(404).json({ error: 'Plan not found' })
 
   const expires_at = plan.validity_days
@@ -79,8 +79,8 @@ export async function redeemSession(req, res) {
   const sessions_used = pkg.sessions_used + 1
   const newStatus = sessions_used >= pkg.sessions_total ? 'exhausted' : 'active'
 
-  await db.from('patient_packages').update({ sessions_used, status: newStatus }).eq('id', id)
-  await db.from('package_redemptions').insert({
+  await supabase.from('patient_packages').update({ sessions_used, status: newStatus }).eq('id', id)
+  await supabase.from('package_redemptions').insert({
     patient_package_id: id, invoice_id, branch_id, session_number: sessions_used,
   })
 

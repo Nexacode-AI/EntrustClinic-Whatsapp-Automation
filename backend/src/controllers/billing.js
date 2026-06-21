@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 import dayjs from 'dayjs'
 
 function generateInvoiceNumber() {
@@ -84,12 +84,12 @@ export async function createInvoice(req, res) {
   if (invErr) return res.status(500).json({ error: invErr.message })
 
   const invoiceItems = items.map(item => ({ ...item, invoice_id: inv.id }))
-  const { error: itemErr } = await db.from('invoice_items').insert(invoiceItems)
+  const { error: itemErr } = await supabase.from('invoice_items').insert(invoiceItems)
   if (itemErr) return res.status(500).json({ error: itemErr.message })
 
   // If panel visit, create panel claim
   if (panel_id) {
-    await db.from('panel_claims').insert({ invoice_id: inv.id, panel_id, amount: total })
+    await supabase.from('panel_claims').insert({ invoice_id: inv.id, panel_id, amount: total })
   }
 
   const { data: full } = await supabase
@@ -153,35 +153,43 @@ export async function updatePayment(req, res) {
 // ── REVENUE STATS ─────────────────────────────────────────────────────────────
 
 export async function getRevenueStats(req, res) {
-  const { period = 'today' } = req.query
   const now = dayjs()
-
-  let from, to
-  if (period === 'today') {
-    from = now.startOf('day').toISOString()
-    to   = now.endOf('day').toISOString()
-  } else if (period === 'week') {
-    from = now.startOf('week').toISOString()
-    to   = now.endOf('week').toISOString()
-  } else if (period === 'month') {
-    from = now.startOf('month').toISOString()
-    to   = now.endOf('month').toISOString()
+  const ranges = {
+    today: [now.startOf('day').toISOString(), now.endOf('day').toISOString()],
+    week:  [now.startOf('week').toISOString(), now.endOf('week').toISOString()],
+    month: [now.startOf('month').toISOString(), now.endOf('month').toISOString()],
   }
 
   const { data, error } = await supabase
     .from('invoices')
     .select('total, paid_amount, payment_status, created_at')
-    .gte('created_at', from)
-    .lte('created_at', to)
+    .gte('created_at', ranges.month[0])
+    .lte('created_at', ranges.month[1])
 
   if (error) return res.status(500).json({ error: error.message })
 
-  const totalRevenue  = data.reduce((s, i) => s + (i.total || 0), 0)
-  const collectedRevenue = data.reduce((s, i) => s + (i.paid_amount || 0), 0)
-  const unpaid        = data.filter(i => i.payment_status === 'unpaid').length
-  const invoiceCount  = data.length
+  const sum = (rows) => rows.reduce((s, i) => s + (i.total || 0), 0)
+  const inRange = (rows, from, to) => rows.filter(i => i.created_at >= from && i.created_at <= to)
 
-  res.json({ totalRevenue, collectedRevenue, unpaid, invoiceCount })
+  const todayRows  = inRange(data, ranges.today[0], ranges.today[1])
+  const weekRows   = inRange(data, ranges.week[0], ranges.week[1])
+
+  const { data: unpaidData } = await supabase
+    .from('invoices')
+    .select('total')
+    .eq('payment_status', 'unpaid')
+
+  const outstanding = (unpaidData || []).reduce((s, i) => s + (i.total || 0), 0)
+
+  res.json({
+    today: sum(todayRows),
+    week:  sum(weekRows),
+    month: sum(data),
+    outstanding,
+    totalRevenue: sum(data),
+    collectedRevenue: data.reduce((s, i) => s + (i.paid_amount || 0), 0),
+    invoiceCount: data.length,
+  })
 }
 
 // ── DAILY SUMMARY ─────────────────────────────────────────────────────────────

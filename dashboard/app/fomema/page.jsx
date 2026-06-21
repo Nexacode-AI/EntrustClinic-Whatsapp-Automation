@@ -18,7 +18,7 @@ export default function FomemaPage() {
   const [addWorkerOpen, setAddWorkerOpen] = useState(false)
   const [examOpen, setExamOpen] = useState(false)
   const [selected, setSelected] = useState(null)
-  const [workerForm, setWorkerForm] = useState({ name: '', ic_passport: '', nationality: 'Bangladesh', employer: '', phone: '', gender: 'male', date_of_birth: '' })
+  const [workerForm, setWorkerForm] = useState({ name: '', passport_number: '', nationality: 'Bangladesh', employer: '', phone: '', gender: 'male', date_of_birth: '' })
   const [examForm, setExamForm] = useState({ result: 'pending', chest_xray: '', urine_test: '', blood_test: '', physical_exam: '', examination_date: dayjs().format('YYYY-MM-DD'), notes: '' })
 
   useEffect(() => { loadAll() }, [])
@@ -35,7 +35,7 @@ export default function FomemaPage() {
   async function handleAddWorker() {
     await api.createWorker(workerForm)
     setAddWorkerOpen(false)
-    setWorkerForm({ name: '', ic_passport: '', nationality: 'Bangladesh', employer: '', phone: '', gender: 'male', date_of_birth: '' })
+    setWorkerForm({ name: '', passport_number: '', nationality: 'Bangladesh', employer: '', phone: '', gender: 'male', date_of_birth: '' })
     loadAll()
   }
 
@@ -52,7 +52,7 @@ export default function FomemaPage() {
   }
 
   const filtered = workers.filter(w =>
-    !search || w.name?.toLowerCase().includes(search.toLowerCase()) || w.ic_passport?.toLowerCase().includes(search.toLowerCase())
+    !search || w.name?.toLowerCase().includes(search.toLowerCase()) || w.passport_number?.toLowerCase().includes(search.toLowerCase())
   )
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin" /></div>
@@ -103,7 +103,7 @@ export default function FomemaPage() {
                   <tr key={w.id}>
                     <td>
                       <p className="font-semibold text-sm text-ink">{w.name}</p>
-                      <p className="text-2xs text-ink-faint font-mono">{w.ic_passport}</p>
+                      <p className="text-2xs text-ink-faint font-mono">{w.passport_number}</p>
                     </td>
                     <td className="text-sm text-ink-muted">{w.nationality}</td>
                     <td className="text-sm text-ink-muted">{w.employer}</td>
@@ -137,7 +137,7 @@ export default function FomemaPage() {
           </div>
           <div className="form-group">
             <label className="form-label">IC / Passport No.</label>
-            <input className="form-input" value={workerForm.ic_passport} onChange={e => setWorkerForm(f => ({ ...f, ic_passport: e.target.value }))} />
+            <input className="form-input" value={workerForm.passport_number} onChange={e => setWorkerForm(f => ({ ...f, passport_number: e.target.value }))} />
           </div>
           <div className="form-group">
             <label className="form-label">Nationality</label>

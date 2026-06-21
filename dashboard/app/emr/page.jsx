@@ -164,11 +164,10 @@ function CompleteButton({ consultId, onComplete }) {
 function ConsultTab({ consult, onSave }) {
   const [form, setForm] = useState({
     chief_complaint: consult.chief_complaint || '',
-    history_of_illness: consult.history_of_illness || '',
-    examination_findings: consult.examination_findings || '',
+    history: consult.history || '',
+    physical_exam: consult.physical_exam || '',
     assessment: consult.assessment || '',
-    plan: consult.plan || '',
-    diagnoses: consult.diagnoses || [],
+    diagnoses_json: consult.diagnoses_json || [],
     mc_days: consult.mc_days || 0,
     follow_up_date: consult.follow_up_date || '',
     notes: consult.notes || '',
@@ -194,15 +193,15 @@ function ConsultTab({ consult, onSave }) {
   }
 
   function addDiag(diag) {
-    if (!form.diagnoses.find(d => d.code === diag.code)) {
-      setForm(f => ({ ...f, diagnoses: [...f.diagnoses, diag] }))
+    if (!form.diagnoses_json.find(d => d.code === diag.code)) {
+      setForm(f => ({ ...f, diagnoses_json: [...f.diagnoses_json, diag] }))
     }
     setDiagSearch('')
     setDiagResults([])
   }
 
   function removeDiag(code) {
-    setForm(f => ({ ...f, diagnoses: f.diagnoses.filter(d => d.code !== code) }))
+    setForm(f => ({ ...f, diagnoses_json: f.diagnoses_json.filter(d => d.code !== code) }))
   }
 
   return (
@@ -214,11 +213,11 @@ function ConsultTab({ consult, onSave }) {
         </div>
         <div className="col-span-2 form-group">
           <label className="form-label">History of Illness</label>
-          <textarea className="form-textarea" rows={3} value={form.history_of_illness} onChange={e => setForm(f => ({ ...f, history_of_illness: e.target.value }))} placeholder="History of present illness..." />
+          <textarea className="form-textarea" rows={3} value={form.history} onChange={e => setForm(f => ({ ...f, history: e.target.value }))} placeholder="History of present illness..." />
         </div>
         <div className="col-span-2 form-group">
           <label className="form-label">Examination Findings</label>
-          <textarea className="form-textarea" rows={3} value={form.examination_findings} onChange={e => setForm(f => ({ ...f, examination_findings: e.target.value }))} placeholder="Physical examination findings..." />
+          <textarea className="form-textarea" rows={3} value={form.physical_exam} onChange={e => setForm(f => ({ ...f, physical_exam: e.target.value }))} placeholder="Physical examination findings..." />
         </div>
       </div>
 
@@ -244,9 +243,9 @@ function ConsultTab({ consult, onSave }) {
             </div>
           )}
         </div>
-        {form.diagnoses.length > 0 && (
+        {form.diagnoses_json.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {form.diagnoses.map(d => (
+            {form.diagnoses_json.map(d => (
               <span key={d.code} className="badge badge-blue flex items-center gap-1">
                 <span className="font-mono">{d.code}</span> {d.description}
                 <button onClick={() => removeDiag(d.code)}><X size={10} /></button>
@@ -257,13 +256,9 @@ function ConsultTab({ consult, onSave }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="form-group">
+        <div className="col-span-2 form-group">
           <label className="form-label">Assessment</label>
-          <textarea className="form-textarea" rows={3} value={form.assessment} onChange={e => setForm(f => ({ ...f, assessment: e.target.value }))} placeholder="Clinical assessment..." />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Plan</label>
-          <textarea className="form-textarea" rows={3} value={form.plan} onChange={e => setForm(f => ({ ...f, plan: e.target.value }))} placeholder="Management plan..." />
+          <textarea className="form-textarea" rows={3} value={form.assessment} onChange={e => setForm(f => ({ ...f, assessment: e.target.value }))} placeholder="Clinical assessment and management plan..." />
         </div>
         <div className="form-group">
           <label className="form-label">MC Days</label>
@@ -316,12 +311,12 @@ function VitalsTab({ patientId, consultId }) {
       {latest && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Blood Pressure', value: latest.bp_systolic && latest.bp_diastolic ? `${latest.bp_systolic}/${latest.bp_diastolic}` : '—', unit: 'mmHg', color: 'bg-red-50 border-red-100' },
-            { label: 'Heart Rate', value: latest.heart_rate || '—', unit: 'bpm', color: 'bg-pink-50 border-pink-100' },
-            { label: 'Temperature', value: latest.temperature || '—', unit: '°C', color: 'bg-orange-50 border-orange-100' },
-            { label: 'SpO2', value: latest.spo2 ? `${latest.spo2}%` : '—', unit: '', color: 'bg-blue-50 border-blue-100' },
-            { label: 'Weight', value: latest.weight || '—', unit: 'kg', color: 'bg-green-50 border-green-100' },
-            { label: 'Height', value: latest.height || '—', unit: 'cm', color: 'bg-teal-50 border-teal-100' },
+            { label: 'Blood Pressure', value: latest.vitals?.bp_systolic && latest.vitals?.bp_diastolic ? `${latest.vitals.bp_systolic}/${latest.vitals.bp_diastolic}` : '—', unit: 'mmHg', color: 'bg-red-50 border-red-100' },
+            { label: 'Heart Rate', value: latest.vitals?.heart_rate || '—', unit: 'bpm', color: 'bg-pink-50 border-pink-100' },
+            { label: 'Temperature', value: latest.vitals?.temperature || '—', unit: '°C', color: 'bg-orange-50 border-orange-100' },
+            { label: 'SpO2', value: latest.vitals?.spo2 ? `${latest.vitals.spo2}%` : '—', unit: '', color: 'bg-blue-50 border-blue-100' },
+            { label: 'Weight', value: latest.vitals?.weight || '—', unit: 'kg', color: 'bg-green-50 border-green-100' },
+            { label: 'Height', value: latest.vitals?.height || '—', unit: 'cm', color: 'bg-teal-50 border-teal-100' },
           ].map(({ label, value, unit, color }) => (
             <div key={label} className={`card-padded border rounded-xl ${color}`}>
               <p className="text-2xs text-ink-faint font-medium">{label}</p>
@@ -339,12 +334,12 @@ function VitalsTab({ patientId, consultId }) {
             <tbody>
               {vitals.slice(1).map((v, i) => (
                 <tr key={i}>
-                  <td>{dayjs(v.recorded_at).format('D MMM YYYY')}</td>
-                  <td>{v.bp_systolic}/{v.bp_diastolic}</td>
-                  <td>{v.heart_rate}</td>
-                  <td>{v.temperature}</td>
-                  <td>{v.spo2}%</td>
-                  <td>{v.weight} kg</td>
+                  <td>{dayjs(v.visit_date || v.created_at).format('D MMM YYYY')}</td>
+                  <td>{v.vitals?.bp_systolic}/{v.vitals?.bp_diastolic}</td>
+                  <td>{v.vitals?.heart_rate}</td>
+                  <td>{v.vitals?.temperature}</td>
+                  <td>{v.vitals?.spo2}%</td>
+                  <td>{v.vitals?.weight} kg</td>
                 </tr>
               ))}
             </tbody>
@@ -479,9 +474,9 @@ function HistoryTab({ patientId }) {
             <Badge status={h.status} />
           </div>
           {h.chief_complaint && <p className="text-sm text-ink-muted"><span className="font-medium text-ink">CC:</span> {h.chief_complaint}</p>}
-          {h.diagnoses?.length > 0 && (
+          {h.diagnoses_json?.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
-              {h.diagnoses.map(d => <span key={d.code} className="badge badge-blue text-xs">{d.code} {d.description}</span>)}
+              {h.diagnoses_json.map(d => <span key={d.code} className="badge badge-blue text-xs">{d.code} {d.description}</span>)}
             </div>
           )}
           {h.mc_days > 0 && <p className="text-xs text-ink-faint mt-1">MC: {h.mc_days} days</p>}

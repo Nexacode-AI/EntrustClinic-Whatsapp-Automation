@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 
 // ── STOCK ITEMS ───────────────────────────────────────────────────────────────
 
@@ -13,10 +13,11 @@ export async function listStockItems(req, res) {
 
   if (type)   query = query.eq('type', type)
   if (search) query = query.ilike('name', `%${search}%`)
-  if (low_stock === 'true') query = query.lte('current_stock', db.raw('reorder_level'))
+  // low_stock filter applied in JS after fetch since Supabase JS doesn't support column-column comparisons
 
-  const { data, error } = await query
+  let { data, error } = await query
   if (error) return res.status(500).json({ error: error.message })
+  if (low_stock === 'true') data = data.filter(i => i.current_stock <= i.reorder_level)
   res.json(data)
 }
 
@@ -71,14 +72,14 @@ export async function addBatch(req, res) {
   if (batchErr) return res.status(500).json({ error: batchErr.message })
 
   // Update current_stock
-  const { data: item } = await db.from('stock_items').select('current_stock').eq('id', item_id).single()
+  const { data: item } = await supabase.from('stock_items').select('current_stock').eq('id', item_id).single()
   await supabase
     .from('stock_items')
     .update({ current_stock: (item?.current_stock || 0) + batch.quantity })
     .eq('id', item_id)
 
   // Record movement
-  await db.from('stock_movements').insert({
+  await supabase.from('stock_movements').insert({
     item_id, batch_id: batch.id, type: 'in', quantity: batch.quantity,
     reference_type: 'purchase_order', notes: `Batch ${batch.batch_number} received`,
   })
@@ -137,7 +138,7 @@ export async function createPurchaseOrder(req, res) {
 
   if (items.length > 0) {
     const poItems = items.map(i => ({ ...i, po_id: po.id, total_cost: i.quantity_ordered * i.unit_cost }))
-    await db.from('purchase_order_items').insert(poItems)
+    await supabase.from('purchase_order_items').insert(poItems)
   }
 
   res.status(201).json(po)
@@ -169,21 +170,21 @@ export async function receivePurchaseOrder(req, res) {
       .single()
 
     // Update stock count
-    const { data: stockItem } = await db.from('stock_items').select('current_stock').eq('id', item.item_id).single()
+    const { data: stockItem } = await supabase.from('stock_items').select('current_stock').eq('id', item.item_id).single()
     await supabase
       .from('stock_items')
       .update({ current_stock: (stockItem?.current_stock || 0) + item.quantity_received })
       .eq('id', item.item_id)
 
     // Log movement
-    await db.from('stock_movements').insert({
+    await supabase.from('stock_movements').insert({
       item_id: item.item_id, batch_id: batch?.id,
       type: 'in', quantity: item.quantity_received,
       reference_id: id, reference_type: 'purchase_order',
     })
   }
 
-  await db.from('purchase_orders').update({ status: 'received', received_at: new Date().toISOString() }).eq('id', id)
+  await supabase.from('purchase_orders').update({ status: 'received', received_at: new Date().toISOString() }).eq('id', id)
   res.json({ ok: true })
 }
 
@@ -194,11 +195,10 @@ export async function getLowStockAlerts(req, res) {
     .from('stock_items')
     .select('id, name, type, unit, current_stock, reorder_level')
     .eq('active', true)
-    .lte('current_stock', db.raw('reorder_level'))
     .order('current_stock')
 
   if (error) return res.status(500).json({ error: error.message })
-  res.json(data)
+  res.json((data || []).filter(i => i.current_stock <= i.reorder_level))
 }
 
 // ── EXPIRY ALERTS ─────────────────────────────────────────────────────────────
@@ -220,20 +220,20 @@ export async function getExpiryAlerts(req, res) {
 // ── SUPPLIERS ─────────────────────────────────────────────────────────────────
 
 export async function listSuppliers(req, res) {
-  const { data, error } = await db.from('suppliers').select('*').eq('active', true).order('name')
+  const { data, error } = await supabase.from('suppliers').select('*').eq('active', true).order('name')
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }
 
 export async function createSupplier(req, res) {
-  const { data, error } = await db.from('suppliers').insert(req.body).select().single()
+  const { data, error } = await supabase.from('suppliers').insert(req.body).select().single()
   if (error) return res.status(500).json({ error: error.message })
   res.status(201).json(data)
 }
 
 export async function updateSupplier(req, res) {
   const { id } = req.params
-  const { data, error } = await db.from('suppliers').update(req.body).eq('id', id).select().single()
+  const { data, error } = await supabase.from('suppliers').update(req.body).eq('id', id).select().single()
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }

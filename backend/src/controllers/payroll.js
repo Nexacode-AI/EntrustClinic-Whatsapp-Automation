@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 
 // Malaysian statutory rates
 const EPF_EMPLOYEE = 0.11   // 11%
@@ -58,7 +58,7 @@ export async function generatePayroll(req, res) {
   if (existing) return res.status(400).json({ error: 'Payroll already generated for this period' })
 
   // Get all active staff
-  let staffQuery = db.from('staff_profiles').select('*').eq('active', true)
+  let staffQuery = supabase.from('staff_profiles').select('*').eq('active', true)
   if (branch_id) staffQuery = staffQuery.eq('branch_id', branch_id)
   const { data: staffList } = await staffQuery
 
@@ -112,7 +112,7 @@ export async function generatePayroll(req, res) {
     })
   }
 
-  await db.from('payroll_items').insert(payrollItems)
+  await supabase.from('payroll_items').insert(payrollItems)
 
   const { data: full } = await supabase
     .from('payroll_runs')

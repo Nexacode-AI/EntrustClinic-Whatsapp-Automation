@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 import dayjs from 'dayjs'
 
 // Revenue report
@@ -13,7 +13,7 @@ export async function getRevenueReport(req, res) {
     // Daily for current month
     const from = `${y}-${String(m).padStart(2,'0')}-01`
     const to   = dayjs(from).endOf('month').format('YYYY-MM-DD')
-    let q = db.from('invoices').select('total, created_at, payment_status').gte('created_at', `${from}T00:00:00`).lte('created_at', `${to}T23:59:59`)
+    let q = supabase.from('invoices').select('total, created_at, payment_status').gte('created_at', `${from}T00:00:00`).lte('created_at', `${to}T23:59:59`)
     if (branch_id) q = q.eq('branch_id', branch_id)
     const { data } = await q
     rows = data
@@ -21,7 +21,7 @@ export async function getRevenueReport(req, res) {
     // Monthly for the year
     const from = `${y}-01-01`
     const to   = `${y}-12-31`
-    let q = db.from('invoices').select('total, created_at, payment_status').gte('created_at', `${from}T00:00:00`).lte('created_at', `${to}T23:59:59`)
+    let q = supabase.from('invoices').select('total, created_at, payment_status').gte('created_at', `${from}T00:00:00`).lte('created_at', `${to}T23:59:59`)
     if (branch_id) q = q.eq('branch_id', branch_id)
     const { data } = await q
     rows = data

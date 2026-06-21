@@ -14,7 +14,7 @@ export default function PayrollPage() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [genOpen, setGenOpen] = useState(false)
-  const [genForm, setGenForm] = useState({ period_month: dayjs().format('YYYY-MM'), notes: '' })
+  const [genForm, setGenForm] = useState({ period_month: dayjs().format('YYYY-MM') })
 
   useEffect(() => { load() }, [])
 
@@ -37,7 +37,8 @@ export default function PayrollPage() {
   async function handleGenerate() {
     setGenerating(true)
     try {
-      const run = await api.generatePayroll(genForm)
+      const [yearStr, monthStr] = genForm.period_month.split('-')
+      const run = await api.generatePayroll({ month: parseInt(monthStr), year: parseInt(yearStr) })
       setGenOpen(false)
       await load()
       selectRun(run)

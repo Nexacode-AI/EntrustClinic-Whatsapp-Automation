@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { Badge } from '../../components/ui/Badge'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
-import { Search, Plus, Receipt, CreditCard, TrendingUp, DollarSign, Printer, Check } from 'lucide-react'
+import { Search, Plus, Receipt, CreditCard, TrendingUp, DollarSign, Printer, Check, X } from 'lucide-react'
 import dayjs from 'dayjs'
 
 const PAY_METHODS = ['cash', 'card', 'online_banking', 'panel', 'package']
@@ -30,7 +30,7 @@ export default function BillingPage() {
         api.revenueStats(),
         api.dailySummary(),
       ])
-      setInvoices(inv || [])
+      setInvoices(inv?.data || inv || [])
       setStats(s || {})
       setDaily(d || {})
     } catch {}
@@ -41,7 +41,7 @@ export default function BillingPage() {
 
   function openPayment(inv) {
     setSelectedInv(inv)
-    setPayForm({ payment_method: 'cash', amount_paid: inv.total_amount || '', notes: '' })
+    setPayForm({ payment_method: 'cash', amount_paid: inv.total || '', notes: '' })
     setPayOpen(true)
   }
 
@@ -132,10 +132,10 @@ export default function BillingPage() {
                       </td>
                       <td className="text-sm text-ink-muted">{dayjs(inv.created_at).format('D MMM YYYY')}</td>
                       <td>
-                        <span className="font-bold text-ink">RM {parseFloat(inv.total_amount || 0).toFixed(2)}</span>
+                        <span className="font-bold text-ink">RM {parseFloat(inv.total || 0).toFixed(2)}</span>
                         {inv.discount_amount > 0 && <p className="text-2xs text-success-dark">-RM {parseFloat(inv.discount_amount).toFixed(2)}</p>}
                       </td>
-                      <td><Badge status={inv.status} /></td>
+                      <td><Badge status={inv.payment_status} /></td>
                       <td>
                         <div className="flex gap-1">
                           {inv.status !== 'paid' && (
@@ -158,23 +158,20 @@ export default function BillingPage() {
         <div className="card card-padded">
           <h3 className="card-title mb-3">Today&apos;s Summary</h3>
           <div className="space-y-2">
-            {(daily.breakdown || []).map(row => (
-              <div key={row.method} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
-                <span className="text-sm capitalize text-ink">{row.method?.replace(/_/g, ' ')}</span>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-ink">RM {parseFloat(row.total || 0).toFixed(2)}</p>
-                  <p className="text-2xs text-ink-faint">{row.count} txn</p>
-                </div>
+            {Object.entries(daily.byMethod || {}).map(([method, total]) => (
+              <div key={method} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                <span className="text-sm capitalize text-ink">{method?.replace(/_/g, ' ')}</span>
+                <p className="text-sm font-bold text-ink">RM {parseFloat(total || 0).toFixed(2)}</p>
               </div>
             ))}
-            {(!daily.breakdown || daily.breakdown.length === 0) && (
+            {Object.keys(daily.byMethod || {}).length === 0 && (
               <p className="text-sm text-ink-faint text-center py-4">No transactions today</p>
             )}
           </div>
-          {daily.total > 0 && (
+          {(daily.totalPaid || 0) > 0 && (
             <div className="mt-3 pt-3 border-t border-border flex justify-between">
-              <span className="font-bold text-ink">Total</span>
-              <span className="font-black text-brand">RM {parseFloat(daily.total || 0).toFixed(2)}</span>
+              <span className="font-bold text-ink">Total Collected</span>
+              <span className="font-black text-brand">RM {parseFloat(daily.totalPaid || 0).toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -264,7 +261,7 @@ function CreateInvoiceModal({ open, onClose, onCreated }) {
             <label className="form-label">Panel / TPA</label>
             <select className="form-select" value={form.panel_id} onChange={e => setForm(f => ({ ...f, panel_id: e.target.value }))}>
               <option value="">Self-pay (cash)</option>
-              {panels.map(p => <option key={p.id} value={p.id}>{p.company_name}</option>)}
+              {panels.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 import dayjs from 'dayjs'
 
 export async function getDashboardStats(req, res) {
@@ -12,10 +12,10 @@ export async function getDashboardStats(req, res) {
     { data: escalations },
     { data: reviews },
   ] = await Promise.all([
-    db.from('appointments').select('status').gte('appointment_date', monthStart).lte('appointment_date', monthEnd),
-    db.from('patients').select('*', { count: 'exact', head: true }),
-    db.from('escalations').select('resolved').gte('created_at', monthStart),
-    db.from('follow_ups').select('rating').gte('created_at', monthStart).not('rating', 'is', null),
+    supabase.from('appointments').select('status').gte('appointment_date', monthStart).lte('appointment_date', monthEnd),
+    supabase.from('patients').select('*', { count: 'exact', head: true }),
+    supabase.from('escalations').select('resolved').gte('created_at', monthStart),
+    supabase.from('follow_ups').select('rating').gte('created_at', monthStart).not('rating', 'is', null),
   ])
 
   const apptStats = { upcoming: 0, completed: 0, cancelled: 0, no_show: 0 }

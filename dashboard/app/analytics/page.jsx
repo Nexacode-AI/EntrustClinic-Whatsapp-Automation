@@ -1,112 +1,234 @@
 import { api } from '../../lib/api'
-import StatsCard from '../../components/StatsCard'
-import RatingsChart from '../../components/RatingsChart'
 import {
-  CalendarCheck, CalendarClock, UserX, XCircle,
-  Users, AlertTriangle, Star, TrendingUp,
+  CalendarCheck, Users, Clock, DollarSign,
+  TrendingUp, Activity, AlertTriangle, CheckCircle,
 } from 'lucide-react'
+import dayjs from 'dayjs'
 
 export default async function AnalyticsPage() {
-  let stats = null
-  try { stats = await api.analytics() } catch {}
+  let stats = null, queue = null, appointments = null, revenue = null
 
-  const appt = stats?.appointments || {}
-  const rev  = stats?.reviews || {}
+  try {
+    ;[stats, queue, appointments, revenue] = await Promise.allSettled([
+      api.analytics(),
+      api.queue(),
+      api.appointments({ date: dayjs().format('YYYY-MM-DD'), limit: 8 }),
+      api.revenueStats(),
+    ]).then(r => r.map(r => r.status === 'fulfilled' ? r.value : null))
+  } catch {}
+
+  const appt   = stats?.appointments  || {}
+  const today  = dayjs().format('dddd, D MMMM YYYY')
+  const qList  = Array.isArray(queue) ? queue : []
+  const aList  = Array.isArray(appointments) ? appointments : []
+
+  const waiting      = qList.filter(q => q.status === 'waiting').length
+  const inConsult    = qList.filter(q => q.status === 'in_consultation').length
+  const todayRevenue = revenue?.today ?? 0
+
+  const KPI = [
+    {
+      label: 'Today\'s Revenue',
+      value: `RM ${parseFloat(todayRevenue).toFixed(2)}`,
+      icon: DollarSign,
+      accent: '#059669',
+    },
+    {
+      label: 'Patients Today',
+      value: qList.length,
+      icon: Users,
+      accent: '#0E7490',
+    },
+    {
+      label: 'Waiting',
+      value: waiting,
+      icon: Clock,
+      accent: '#D97706',
+    },
+    {
+      label: 'In Consultation',
+      value: inConsult,
+      icon: Activity,
+      accent: '#7C3AED',
+    },
+    {
+      label: 'Completed Today',
+      value: qList.filter(q => q.status === 'done').length,
+      icon: CheckCircle,
+      accent: '#059669',
+    },
+    {
+      label: 'Appointments',
+      value: appt.upcoming ?? 0,
+      icon: CalendarCheck,
+      accent: '#0E7490',
+    },
+    {
+      label: 'Total Patients',
+      value: stats?.totalPatients ?? 0,
+      icon: Users,
+      accent: '#0369A1',
+    },
+    {
+      label: 'Open Escalations',
+      value: stats?.escalations?.open ?? 0,
+      icon: AlertTriangle,
+      accent: '#DC2626',
+    },
+  ]
+
+  const STATUS_BADGE = {
+    confirmed:  { label: 'Confirmed',  cls: 'bg-blue-50 text-blue-700' },
+    completed:  { label: 'Completed',  cls: 'bg-green-50 text-green-700' },
+    cancelled:  { label: 'Cancelled',  cls: 'bg-red-50 text-red-700' },
+    no_show:    { label: 'No Show',    cls: 'bg-red-50 text-red-700' },
+    pending:    { label: 'Pending',    cls: 'bg-yellow-50 text-yellow-700' },
+    rescheduled:{ label: 'Rescheduled',cls: 'bg-purple-50 text-purple-700' },
+  }
+
+  const QUEUE_BADGE = {
+    waiting:         { label: 'Waiting',     cls: 'bg-yellow-50 text-yellow-700' },
+    in_consultation: { label: 'In Consult',  cls: 'bg-teal-50 text-teal-700' },
+    billing:         { label: 'Billing',     cls: 'bg-blue-50 text-blue-700' },
+    done:            { label: 'Done',        cls: 'bg-green-50 text-green-700' },
+    no_show:         { label: 'No Show',     cls: 'bg-red-50 text-red-700' },
+  }
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: '#0f172a' }}>Overview</h1>
-        <p className="text-sm mt-1" style={{ color: '#64748b' }}>Real-time clinic performance snapshot</p>
-      </div>
-
-      {/* Top stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <StatsCard label="Completed"  value={appt.completed} icon={CalendarCheck} color="green"  />
-        <StatsCard label="Upcoming"   value={appt.upcoming}  icon={CalendarClock} color="blue"   />
-        <StatsCard label="No-shows"   value={appt.no_show}   icon={UserX}         color="yellow" />
-        <StatsCard label="Cancelled"  value={appt.cancelled} icon={XCircle}       color="red"    />
-      </div>
-
-      {/* Second stats row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <StatsCard label="Total Patients"      value={stats?.totalPatients}     icon={Users}         color="teal"   />
-        <StatsCard label="Open Escalations"    value={stats?.escalations?.open} icon={AlertTriangle} color="red"    />
-        <StatsCard
-          label="Positive Review Rate"
-          value={rev.positiveRate != null ? `${rev.positiveRate}%` : null}
-          icon={Star}
-          color="purple"
-        />
-      </div>
-
-      {/* Bottom panels */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Feedback breakdown — 2 cols */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp size={15} style={{ color: '#0ea5e9' }} />
-            <p className="text-sm font-semibold" style={{ color: '#0f172a' }}>Patient Feedback</p>
-          </div>
-          <p className="text-xs mb-6" style={{ color: '#94a3b8' }}>Sentiment from post-visit reviews</p>
-
-          <div className="space-y-3">
-            {[
-              { label: 'Positive', value: rev.excellent ?? 0, color: '#059669', bg: '#ecfdf5', bar: '#10b981' },
-              { label: 'Neutral',  value: rev.okay ?? 0,      color: '#d97706', bg: '#fffbeb', bar: '#f59e0b' },
-              { label: 'Negative', value: rev.not_great ?? 0, color: '#dc2626', bg: '#fff1f2', bar: '#ef4444' },
-            ].map(({ label, value, color, bg, bar }) => {
-              const total = (rev.excellent ?? 0) + (rev.okay ?? 0) + (rev.not_great ?? 0)
-              const pct = total > 0 ? Math.round((value / total) * 100) : 0
-              return (
-                <div key={label} className="p-4 rounded-xl" style={{ backgroundColor: bg }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold" style={{ color }}>{label}</p>
-                    <p className="text-xl font-bold" style={{ color }}>{value}</p>
-                  </div>
-                  <div className="h-1.5 rounded-full" style={{ backgroundColor: `${bar}30` }}>
-                    <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: bar }} />
-                  </div>
-                  <p className="text-xs mt-1.5" style={{ color, opacity: 0.7 }}>{pct}% of total</p>
-                </div>
-              )
-            })}
-          </div>
+      {/* Page header */}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">{today}</p>
         </div>
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 text-xs text-success-dark font-semibold">
+            <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+            System Live
+          </span>
+        </div>
+      </div>
 
-        {/* Chart — 3 cols */}
-        <div className="lg:col-span-3 bg-white rounded-2xl border border-slate-100 p-6" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-          <div className="flex items-center gap-2 mb-1">
-            <CalendarCheck size={15} style={{ color: '#0ea5e9' }} />
-            <p className="text-sm font-semibold" style={{ color: '#0f172a' }}>Appointment Status</p>
-          </div>
-          <p className="text-xs mb-4" style={{ color: '#94a3b8' }}>Distribution across all states</p>
-
-          <RatingsChart
-            data={[
-              { name: 'Completed', value: appt.completed ?? 0, color: '#10b981' },
-              { name: 'Upcoming',  value: appt.upcoming  ?? 0, color: '#3b82f6' },
-              { name: 'No-show',   value: appt.no_show   ?? 0, color: '#f59e0b' },
-              { name: 'Cancelled', value: appt.cancelled ?? 0, color: '#ef4444' },
-            ]}
-          />
-
-          {/* Quick stats below chart */}
-          <div className="grid grid-cols-4 gap-3 mt-4">
-            {[
-              { label: 'Completed', value: appt.completed ?? 0, color: '#10b981', bg: '#ecfdf5' },
-              { label: 'Upcoming',  value: appt.upcoming  ?? 0, color: '#3b82f6', bg: '#eff6ff' },
-              { label: 'No-show',   value: appt.no_show   ?? 0, color: '#f59e0b', bg: '#fffbeb' },
-              { label: 'Cancelled', value: appt.cancelled ?? 0, color: '#ef4444', bg: '#fff1f2' },
-            ].map(({ label, value, color, bg }) => (
-              <div key={label} className="p-3 rounded-xl text-center" style={{ backgroundColor: bg }}>
-                <p className="text-lg font-bold" style={{ color }}>{value}</p>
-                <p className="text-xs mt-0.5" style={{ color, opacity: 0.7 }}>{label}</p>
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {KPI.slice(0, 8).map(({ label, value, icon: Icon, accent }) => (
+          <div key={label} className="bg-white rounded-xl border border-border shadow-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-ink-muted uppercase tracking-widest">{label}</p>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${accent}18` }}>
+                <Icon size={15} style={{ color: accent }} strokeWidth={2} />
               </div>
-            ))}
+            </div>
+            <p className="text-2xl font-extrabold text-ink tracking-tight">{value}</p>
           </div>
+        ))}
+      </div>
+
+      {/* Main content: queue + appointments */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        {/* Today's Queue */}
+        <div className="bg-white rounded-xl border border-border shadow-card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <div>
+              <p className="text-sm font-bold text-ink">Today&apos;s Queue</p>
+              <p className="text-xs text-ink-muted mt-0.5">{qList.length} patients checked in</p>
+            </div>
+            <a href="/queue" className="text-xs font-semibold text-brand hover:underline">View all →</a>
+          </div>
+
+          {qList.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-3">
+                <Users size={18} className="text-ink-faint" />
+              </div>
+              <p className="text-sm font-semibold text-ink">No patients in queue</p>
+              <p className="text-xs text-ink-muted mt-1">Walk-ins will appear here</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {qList.slice(0, 7).map(entry => {
+                const badge = QUEUE_BADGE[entry.status] || { label: entry.status, cls: 'bg-muted text-ink-muted' }
+                return (
+                  <div key={entry.id} className="flex items-center px-5 py-3 hover:bg-muted/40 transition-colors">
+                    <span className="text-base font-black text-brand w-10 flex-shrink-0">#{entry.queue_number}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-ink truncate">{entry.patients?.name || 'Walk-in'}</p>
+                      <p className="text-xs text-ink-faint">{entry.doctors?.name || '—'}</p>
+                    </div>
+                    <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+                  </div>
+                )
+              })}
+              {qList.length > 7 && (
+                <div className="px-5 py-3 text-xs text-ink-faint text-center">+{qList.length - 7} more</div>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Today's Appointments */}
+        <div className="bg-white rounded-xl border border-border shadow-card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <div>
+              <p className="text-sm font-bold text-ink">Today&apos;s Appointments</p>
+              <p className="text-xs text-ink-muted mt-0.5">{aList.length} scheduled</p>
+            </div>
+            <a href="/appointments" className="text-xs font-semibold text-brand hover:underline">View all →</a>
+          </div>
+
+          {aList.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-3">
+                <CalendarCheck size={18} className="text-ink-faint" />
+              </div>
+              <p className="text-sm font-semibold text-ink">No appointments today</p>
+              <p className="text-xs text-ink-muted mt-1">Scheduled appointments will appear here</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {aList.slice(0, 7).map(appt => {
+                const badge = STATUS_BADGE[appt.status] || { label: appt.status, cls: 'bg-muted text-ink-muted' }
+                return (
+                  <div key={appt.id} className="flex items-center px-5 py-3 hover:bg-muted/40 transition-colors">
+                    <div className="w-12 flex-shrink-0">
+                      <p className="text-xs font-bold text-ink">{appt.time ? dayjs(`2000-01-01 ${appt.time}`).format('h:mm') : '—'}</p>
+                      <p className="text-2xs text-ink-faint">{appt.time ? dayjs(`2000-01-01 ${appt.time}`).format('A') : ''}</p>
+                    </div>
+                    <div className="flex-1 min-w-0 ml-3">
+                      <p className="text-sm font-semibold text-ink truncate">{appt.patients?.name || appt.patient_name || '—'}</p>
+                      <p className="text-xs text-ink-faint">{appt.doctors?.name || appt.doctor_name || '—'}</p>
+                    </div>
+                    <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+                  </div>
+                )
+              })}
+              {aList.length > 7 && (
+                <div className="px-5 py-3 text-xs text-ink-faint text-center">+{aList.length - 7} more</div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Revenue summary row */}
+      <div className="grid grid-cols-3 gap-3 mt-4">
+        {[
+          { label: 'Today', value: revenue?.today ?? 0 },
+          { label: 'This Week', value: revenue?.week ?? 0 },
+          { label: 'This Month', value: revenue?.month ?? 0 },
+        ].map(({ label, value }) => (
+          <div key={label} className="bg-white rounded-xl border border-border shadow-card px-5 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-ink-muted uppercase tracking-widest mb-1">{label}</p>
+              <p className="text-xl font-extrabold text-ink">RM {parseFloat(value).toFixed(2)}</p>
+            </div>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#0E749018' }}>
+              <TrendingUp size={15} style={{ color: '#0E7490' }} />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

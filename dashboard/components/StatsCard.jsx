@@ -1,37 +1,21 @@
-const colorMap = {
-  green:   { num: '#059669', bg: '#ecfdf5', border: '#a7f3d0', icon: '#10b981', iconBg: '#d1fae5' },
-  blue:    { num: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', icon: '#3b82f6', iconBg: '#dbeafe' },
-  yellow:  { num: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: '#f59e0b', iconBg: '#fef3c7' },
-  red:     { num: '#dc2626', bg: '#fff1f2', border: '#fecaca', icon: '#ef4444', iconBg: '#fee2e2' },
-  teal:    { num: '#0369a1', bg: '#f0f9ff', border: '#bae6fd', icon: '#0ea5e9', iconBg: '#e0f2fe' },
-  purple:  { num: '#7c3aed', bg: '#f5f3ff', border: '#c4b5fd', icon: '#8b5cf6', iconBg: '#ede9fe' },
-  default: { num: '#374151', bg: '#f9fafb', border: '#e5e7eb', icon: '#6b7280', iconBg: '#f3f4f6' },
-}
-
-export default function StatsCard({ label, value, icon: Icon, color = 'default', sub }) {
-  const c = colorMap[color] || colorMap.default
-
+export default function StatsCard({ label, value, icon: Icon, accent = '#0E7490', sub, trend, trendLabel }) {
   return (
-    <div
-      className="rounded-2xl p-5"
-      style={{
-        backgroundColor: c.bg,
-        border: `1px solid ${c.border}`,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-      }}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: c.num, opacity: 0.7 }}>{label}</p>
+    <div className="bg-white rounded-xl border border-border shadow-card p-5 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-ink-muted uppercase tracking-widest">{label}</p>
         {Icon && (
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: c.iconBg }}>
-            <Icon size={16} style={{ color: c.icon }} strokeWidth={2} />
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${accent}18` }}>
+            <Icon size={15} style={{ color: accent }} strokeWidth={2} />
           </div>
         )}
       </div>
-      <p className="text-3xl font-bold tracking-tight" style={{ color: c.num }}>
-        {value ?? 0}
-      </p>
-      {sub && <p className="text-xs mt-2" style={{ color: c.num, opacity: 0.6 }}>{sub}</p>}
+      <p className="text-3xl font-extrabold text-ink tracking-tight">{value ?? 0}</p>
+      {sub && <p className="text-xs text-ink-faint">{sub}</p>}
+      {trend != null && (
+        <p className={`text-xs font-semibold ${trend >= 0 ? 'text-success-dark' : 'text-danger-dark'}`}>
+          {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}% {trendLabel || 'vs yesterday'}
+        </p>
+      )}
     </div>
   )
 }

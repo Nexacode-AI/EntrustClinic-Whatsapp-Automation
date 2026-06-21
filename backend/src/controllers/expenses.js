@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 import dayjs from 'dayjs'
 
 export async function listExpenses(req, res) {
@@ -25,27 +25,27 @@ export async function listExpenses(req, res) {
 }
 
 export async function createExpense(req, res) {
-  const { data, error } = await db.from('expenses').insert(req.body).select(`*, expense_categories(name)`).single()
+  const { data, error } = await supabase.from('expenses').insert(req.body).select(`*, expense_categories(name)`).single()
   if (error) return res.status(500).json({ error: error.message })
   res.status(201).json(data)
 }
 
 export async function updateExpense(req, res) {
   const { id } = req.params
-  const { data, error } = await db.from('expenses').update(req.body).eq('id', id).select(`*, expense_categories(name)`).single()
+  const { data, error } = await supabase.from('expenses').update(req.body).eq('id', id).select(`*, expense_categories(name)`).single()
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }
 
 export async function deleteExpense(req, res) {
   const { id } = req.params
-  const { error } = await db.from('expenses').delete().eq('id', id)
+  const { error } = await supabase.from('expenses').delete().eq('id', id)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true })
 }
 
 export async function listCategories(req, res) {
-  const { data, error } = await db.from('expense_categories').select('*').order('name')
+  const { data, error } = await supabase.from('expense_categories').select('*').order('name')
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }
@@ -86,8 +86,8 @@ export async function getProfitLoss(req, res) {
   const to   = dayjs(from).endOf('month').format('YYYY-MM-DD')
 
   const [invoicesRes, expensesRes] = await Promise.all([
-    db.from('invoices').select('total, payment_status').gte('created_at', `${from}T00:00:00`).lte('created_at', `${to}T23:59:59`),
-    db.from('expenses').select('amount').gte('date', from).lte('date', to),
+    supabase.from('invoices').select('total, payment_status').gte('created_at', `${from}T00:00:00`).lte('created_at', `${to}T23:59:59`),
+    supabase.from('expenses').select('amount').gte('date', from).lte('date', to),
   ])
 
   const revenue  = (invoicesRes.data || []).reduce((s, i) => s + (i.total || 0), 0)

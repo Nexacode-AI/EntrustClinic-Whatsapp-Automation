@@ -1,7 +1,7 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 
 export async function listPanels(req, res) {
-  const { data, error } = await db.from('panel_companies').select('*, panel_fee_schedules(count)').eq('active', true).order('name')
+  const { data, error } = await supabase.from('panel_companies').select('*, panel_fee_schedules(count)').eq('active', true).order('name')
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }
@@ -18,14 +18,14 @@ export async function getPanel(req, res) {
 }
 
 export async function createPanel(req, res) {
-  const { data, error } = await db.from('panel_companies').insert(req.body).select().single()
+  const { data, error } = await supabase.from('panel_companies').insert(req.body).select().single()
   if (error) return res.status(500).json({ error: error.message })
   res.status(201).json(data)
 }
 
 export async function updatePanel(req, res) {
   const { id } = req.params
-  const { data, error } = await db.from('panel_companies').update(req.body).eq('id', id).select().single()
+  const { data, error } = await supabase.from('panel_companies').update(req.body).eq('id', id).select().single()
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }
@@ -35,15 +35,15 @@ export async function setPanelFees(req, res) {
   const { fees = [] } = req.body // [{ service_id, fee }]
 
   // Delete old fees for this panel
-  await db.from('panel_fee_schedules').delete().eq('panel_id', panel_id)
+  await supabase.from('panel_fee_schedules').delete().eq('panel_id', panel_id)
 
   if (fees.length > 0) {
     const rows = fees.map(f => ({ panel_id, service_id: f.service_id, fee: f.fee }))
-    const { error } = await db.from('panel_fee_schedules').insert(rows)
+    const { error } = await supabase.from('panel_fee_schedules').insert(rows)
     if (error) return res.status(500).json({ error: error.message })
   }
 
-  const { data } = await db.from('panel_fee_schedules').select('*, services(name)').eq('panel_id', panel_id)
+  const { data } = await supabase.from('panel_fee_schedules').select('*, services(name)').eq('panel_id', panel_id)
   res.json(data)
 }
 
@@ -70,7 +70,7 @@ export async function updateClaimStatus(req, res) {
   if (status === 'submitted')  updates.submitted_at = new Date().toISOString()
   if (status === 'paid')       updates.paid_at = new Date().toISOString()
   if (status === 'rejected')   updates.rejected_reason = rejected_reason
-  const { data, error } = await db.from('panel_claims').update(updates).eq('id', id).select().single()
+  const { data, error } = await supabase.from('panel_claims').update(updates).eq('id', id).select().single()
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
 }

@@ -17,7 +17,7 @@ export default function PanelPage() {
   const [aging, setAging] = useState({})
   const [loading, setLoading] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
-  const [form, setForm] = useState({ company_name: '', contact_person: '', email: '', phone: '', credit_limit: '' })
+  const [form, setForm] = useState({ name: '', contact: '', email: '', phone: '' })
 
   useEffect(() => { loadAll() }, [])
 
@@ -34,7 +34,7 @@ export default function PanelPage() {
   async function handleAddPanel() {
     await api.createPanel(form)
     setAddOpen(false)
-    setForm({ company_name: '', contact_person: '', email: '', phone: '', credit_limit: '' })
+    setForm({ name: '', contact: '', email: '', phone: '' })
     loadAll()
   }
 
@@ -68,15 +68,14 @@ export default function PanelPage() {
               <EmptyState icon={Building2} title="No panel companies" description="Add corporate panel companies to enable panel billing" action={<button onClick={() => setAddOpen(true)} className="btn-primary btn-sm"><Plus size={13} /> Add Panel</button>} />
             ) : (
               <table className="data-table">
-                <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>Credit Limit</th><th>Status</th></tr></thead>
+                <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead>
                 <tbody>
                   {panels.map(p => (
                     <tr key={p.id}>
-                      <td className="font-semibold text-sm">{p.company_name}</td>
-                      <td className="text-sm text-ink-muted">{p.contact_person}</td>
+                      <td className="font-semibold text-sm">{p.name}</td>
+                      <td className="text-sm text-ink-muted">{p.contact}</td>
                       <td className="text-sm text-ink-muted">{p.email}</td>
                       <td className="text-sm text-ink-muted">{p.phone}</td>
-                      <td className="text-sm font-semibold">RM {parseFloat(p.credit_limit || 0).toFixed(2)}</td>
                       <td><Badge status={p.status || 'active'} /></td>
                     </tr>
                   ))}
@@ -96,10 +95,10 @@ export default function PanelPage() {
                 <tbody>
                   {claims.map(c => (
                     <tr key={c.id}>
-                      <td className="font-mono text-brand font-semibold text-sm">{c.claim_reference || '—'}</td>
+                      <td className="font-mono text-brand font-semibold text-sm">{c.claim_number || '—'}</td>
                       <td className="text-sm">{c.invoices?.patients?.name}</td>
-                      <td className="text-sm">{c.panel_companies?.company_name}</td>
-                      <td className="font-semibold text-sm">RM {parseFloat(c.claim_amount || 0).toFixed(2)}</td>
+                      <td className="text-sm">{c.panel_companies?.name}</td>
+                      <td className="font-semibold text-sm">RM {parseFloat(c.amount || 0).toFixed(2)}</td>
                       <td><Badge status={c.status} /></td>
                       <td className="text-sm text-ink-muted">{c.submitted_at ? dayjs(c.submitted_at).format('D MMM YYYY') : '—'}</td>
                       <td>
@@ -148,16 +147,12 @@ export default function PanelPage() {
         <><button onClick={() => setAddOpen(false)} className="btn-secondary">Cancel</button><button onClick={handleAddPanel} className="btn-primary">Add Panel</button></>
       }>
         <div className="space-y-3">
-          {[['company_name','Company Name'],['contact_person','Contact Person'],['email','Email'],['phone','Phone']].map(([k,l]) => (
+          {[['name','Company Name'],['contact','Contact Person'],['email','Email'],['phone','Phone']].map(([k,l]) => (
             <div key={k} className="form-group">
               <label className="form-label">{l}</label>
               <input className="form-input" type={k === 'email' ? 'email' : 'text'} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
             </div>
           ))}
-          <div className="form-group">
-            <label className="form-label">Credit Limit (RM)</label>
-            <input type="number" step="0.01" className="form-input" value={form.credit_limit} onChange={e => setForm(f => ({ ...f, credit_limit: e.target.value }))} />
-          </div>
         </div>
       </Modal>
     </div>

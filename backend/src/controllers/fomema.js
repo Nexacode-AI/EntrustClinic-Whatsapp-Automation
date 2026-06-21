@@ -1,4 +1,4 @@
-import { db } from '../config/database.js'
+import { db as supabase } from '../config/database.js'
 
 export async function listWorkers(req, res) {
   const { status, employer, search } = req.query
@@ -65,7 +65,7 @@ export async function createExam(req, res) {
 
   // Update worker status based on exam result
   if (req.body.overall_result) {
-    await db.from('fomema_workers').update({ status: req.body.overall_result }).eq('id', worker_id)
+    await supabase.from('fomema_workers').update({ status: req.body.overall_result }).eq('id', worker_id)
   }
 
   res.status(201).json(data)
@@ -84,7 +84,7 @@ export async function updateExam(req, res) {
 
   // Sync worker status
   if (req.body.overall_result && data.worker_id) {
-    await db.from('fomema_workers').update({ status: req.body.overall_result }).eq('id', data.worker_id)
+    await supabase.from('fomema_workers').update({ status: req.body.overall_result }).eq('id', data.worker_id)
   }
 
   res.json(data)
