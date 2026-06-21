@@ -36,7 +36,7 @@ export default function TelemedicinePage() {
 
   async function handleStart(id) {
     const room = await api.startRoom(id)
-    if (room?.jitsi_url) window.open(room.jitsi_url, '_blank')
+    if (room?.host_link) window.open(room.host_link, '_blank')
     loadAll()
   }
 
@@ -101,8 +101,8 @@ export default function TelemedicinePage() {
             <tbody>
               {past.slice(0, 10).map(room => (
                 <tr key={room.id}>
-                  <td className="font-semibold text-sm">{room.patients?.name}</td>
-                  <td className="text-sm text-ink-muted">{room.doctors?.name}</td>
+                  <td className="font-semibold text-sm">{room.patients?.name || room.appointments?.patients?.name}</td>
+                  <td className="text-sm text-ink-muted">{room.doctors?.name || room.appointments?.doctors?.name}</td>
                   <td className="text-sm text-ink-muted">{room.scheduled_at ? dayjs(room.scheduled_at).format('D MMM HH:mm') : '—'}</td>
                   <td className="text-sm text-ink-muted">
                     {room.started_at && room.ended_at
@@ -160,13 +160,13 @@ function RoomCard({ room, onStart, onEnd, onSendLink, isActive }) {
         <Badge status={room.status} />
         {isActive && <span className="flex items-center gap-1 text-2xs text-danger font-semibold"><span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" /> LIVE</span>}
       </div>
-      <p className="font-bold text-ink">{room.patients?.name}</p>
-      <p className="text-xs text-ink-muted">{room.doctors?.name}</p>
+      <p className="font-bold text-ink">{room.patients?.name || room.appointments?.patients?.name}</p>
+      <p className="text-xs text-ink-muted">{room.doctors?.name || room.appointments?.doctors?.name}</p>
       {room.scheduled_at && (
         <p className="text-xs text-ink-faint mt-1">{dayjs(room.scheduled_at).format('D MMM YYYY · HH:mm')}</p>
       )}
-      {room.jitsi_url && (
-        <a href={room.jitsi_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand flex items-center gap-1 mt-1 hover:underline">
+      {room.host_link && (
+        <a href={room.host_link} target="_blank" rel="noopener noreferrer" className="text-xs text-brand flex items-center gap-1 mt-1 hover:underline">
           <Link size={10} /> View room link
         </a>
       )}
@@ -177,7 +177,7 @@ function RoomCard({ room, onStart, onEnd, onSendLink, isActive }) {
           </button>
         )}
         {isActive && (
-          <a href={room.jitsi_url} target="_blank" rel="noopener noreferrer" className="btn-primary btn-sm flex-1 flex items-center justify-center gap-1">
+          <a href={room.host_link} target="_blank" rel="noopener noreferrer" className="btn-primary btn-sm flex-1 flex items-center justify-center gap-1">
             <ExternalLink size={12} /> Join
           </a>
         )}

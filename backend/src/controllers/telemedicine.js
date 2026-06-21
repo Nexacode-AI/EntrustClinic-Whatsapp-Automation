@@ -6,34 +6,35 @@ function generateRoomName() {
 }
 
 export async function createVideoRoom(req, res) {
-  const { appointment_id, consultation_id, scheduled_at } = req.body
+  const { appointment_id, consultation_id, patient_id, doctor_id, scheduled_at, notes } = req.body
 
-  const roomName   = generateRoomName()
-  const hostLink   = `https://meet.jit.si/${roomName}#config.startWithVideoMuted=false&userInfo.displayName=Doctor`
+  const roomName    = generateRoomName()
+  const hostLink    = `https://meet.jit.si/${roomName}#config.startWithVideoMuted=false&userInfo.displayName=Doctor`
   const patientLink = `https://meet.jit.si/${roomName}#config.startWithVideoMuted=false&userInfo.displayName=Patient`
 
   const { data, error } = await supabase
     .from('video_rooms')
-    .insert({ appointment_id, consultation_id, jitsi_room_name: roomName, host_link: hostLink, patient_link: patientLink, scheduled_at, status: 'scheduled' })
+    .insert({ appointment_id: appointment_id || null, consultation_id: consultation_id || null, patient_id: patient_id || null, doctor_id: doctor_id || null, jitsi_room_name: roomName, host_link: hostLink, patient_link: patientLink, scheduled_at, notes, status: 'scheduled' })
     .select()
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
 
-  // Send WhatsApp link to patient
+  // Send WhatsApp link — look up patient from appointment or direct patient_id
+  let patientInfo = null
   if (appointment_id) {
-    const { data: appt } = await supabase
-      .from('appointments')
-      .select('patients(phone, name)')
-      .eq('id', appointment_id)
-      .single()
+    const { data: appt } = await supabase.from('appointments').select('patients(phone, name)').eq('id', appointment_id).single()
+    patientInfo = appt?.patients
+  } else if (patient_id) {
+    const { data: p } = await supabase.from('patients').select('phone, name').eq('id', patient_id).single()
+    patientInfo = p
+  }
 
-    if (appt?.patients?.phone) {
-      await sendMessage(
-        appt.patients.phone,
-        `Hi ${appt.patients.name}, your telemedicine appointment link is ready:\n\n📹 Join here: ${patientLink}\n\nNo download needed — just click the link!`
-      ).catch(() => {})
-    }
+  if (patientInfo?.phone) {
+    await sendMessage(
+      patientInfo.phone,
+      `Hi ${patientInfo.name}, your telemedicine appointment link is ready:\n\n📹 Join here: ${patientLink}\n\nNo download needed — just click the link!`
+    ).catch(() => {})
   }
 
   res.status(201).json(data)
@@ -43,7 +44,7 @@ export async function listVideoRooms(req, res) {
   const { status, date } = req.query
   let query = supabase
     .from('video_rooms')
-    .select(`*, appointments(*, patients(name, phone), doctors(name))`)
+    .select(`*, patients(name, phone), doctors(name), appointments(*, patients(name, phone), doctors(name))`)
     .order('scheduled_at', { ascending: false })
 
   if (status) query = query.eq('status', status)
@@ -84,12 +85,12 @@ export async function sendRoomLink(req, res) {
   const { id } = req.params
   const { data } = await supabase
     .from('video_rooms')
-    .select(`*, appointments(*, patients(name, phone))`)
+    .select(`*, patients(name, phone), appointments(*, patients(name, phone))`)
     .eq('id', id)
     .single()
 
   if (!data) return res.status(404).json({ error: 'Room not found' })
-  const patient = data.appointments?.patients
+  const patient = data.patients || data.appointments?.patients
   if (!patient?.phone) return res.status(400).json({ error: 'No patient phone number' })
 
   await sendMessage(
