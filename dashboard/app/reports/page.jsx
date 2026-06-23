@@ -107,7 +107,7 @@ export default function ReportsPage() {
                   {productivity.length === 0 ? (
                     <EmptyState icon={Stethoscope} title="No data" />
                   ) : (
-                    <table className="data-table">
+                    <div className="overflow-x-auto"><table className="data-table">
                       <thead><tr><th>Doctor</th><th>Consultations</th><th>Completed</th><th>Revenue Generated</th></tr></thead>
                       <tbody>
                         {productivity.map((row, i) => (
@@ -124,7 +124,7 @@ export default function ReportsPage() {
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </table></div>
                   )}
                 </div>
               )}
@@ -158,7 +158,7 @@ export default function ReportsPage() {
                   {drugUsage.length === 0 ? (
                     <EmptyState icon={Pill} title="No drug data" />
                   ) : (
-                    <table className="data-table">
+                    <div className="overflow-x-auto"><table className="data-table">
                       <thead><tr><th>Drug</th><th>Prescriptions</th><th>Units Dispensed</th></tr></thead>
                       <tbody>
                         {drugUsage.map((d, i) => (
@@ -172,7 +172,7 @@ export default function ReportsPage() {
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </table></div>
                   )}
                 </div>
               )}

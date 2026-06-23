@@ -96,7 +96,7 @@ export default function TelemedicinePage() {
       {past.length > 0 && (
         <div className="card">
           <div className="card-header"><span className="card-title text-sm">Ended Rooms</span></div>
-          <table className="data-table">
+          <div className="overflow-x-auto"><table className="data-table">
             <thead><tr><th>Patient</th><th>Doctor</th><th>Scheduled</th><th>Duration</th><th>Status</th></tr></thead>
             <tbody>
               {past.slice(0, 10).map(room => (
@@ -113,7 +113,7 @@ export default function TelemedicinePage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 

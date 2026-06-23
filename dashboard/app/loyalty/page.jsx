@@ -75,7 +75,7 @@ export default function LoyaltyPage() {
       </div>
 
       {/* Tier overview */}
-      <div className="grid grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
         {Object.entries(TIERS).map(([tier, range]) => (
           <div key={tier} className={`card-padded border rounded-xl ${range.bg}`}>
             <p className={`text-sm font-bold capitalize ${range.color}`}>{tier}</p>
@@ -118,7 +118,7 @@ export default function LoyaltyPage() {
             {transactions.length === 0 ? (
               <EmptyState icon={Star} title="No transactions" description="Point transactions will appear here" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Patient</th><th>Type</th><th>Points</th><th>Description</th><th>Date</th></tr></thead>
                 <tbody>
                   {transactions.map(tx => (
@@ -135,7 +135,7 @@ export default function LoyaltyPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}

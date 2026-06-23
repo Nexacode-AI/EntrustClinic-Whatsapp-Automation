@@ -74,7 +74,7 @@ export default function StaffPage() {
       </div>
 
       {/* Today stats */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div className="stat-card">
           <div><p className="stat-value">{staff.length}</p><p className="stat-label">Total Staff</p></div>
           <div className="stat-icon-wrap bg-brand-light"><Users size={18} className="text-brand" /></div>
@@ -99,7 +99,7 @@ export default function StaffPage() {
             {staff.length === 0 ? (
               <EmptyState icon={Users} title="No staff" description="Add your clinic staff members" action={<button onClick={() => setAddOpen(true)} className="btn-primary btn-sm"><Plus size={13} /> Add Staff</button>} />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Name</th><th>Role</th><th>IC Number</th><th>Phone</th><th>Salary</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
                   {staff.map(s => {
@@ -137,7 +137,7 @@ export default function StaffPage() {
                     )
                   })}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}
@@ -147,7 +147,7 @@ export default function StaffPage() {
             {attendance.length === 0 ? (
               <EmptyState icon={Clock} title="No attendance today" description="Staff check-in/out will appear here" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Staff</th><th>Role</th><th>Clock In</th><th>Clock Out</th><th>Hours</th></tr></thead>
                 <tbody>
                   {attendance.map(a => (
@@ -160,7 +160,7 @@ export default function StaffPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}
@@ -170,7 +170,7 @@ export default function StaffPage() {
             {leaves.length === 0 ? (
               <EmptyState icon={Calendar} title="No pending leave requests" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Staff</th><th>Type</th><th>Start</th><th>End</th><th>Reason</th><th>Actions</th></tr></thead>
                 <tbody>
                   {leaves.map(l => (
@@ -189,7 +189,7 @@ export default function StaffPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}

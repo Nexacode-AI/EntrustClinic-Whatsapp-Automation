@@ -94,7 +94,7 @@ export default function FomemaPage() {
         {filtered.length === 0 ? (
           <EmptyState icon={Users} title="No workers registered" description="Register foreign workers to begin FOMEMA examination" action={<button onClick={() => setAddWorkerOpen(true)} className="btn-primary btn-sm"><Plus size={13} /> Register</button>} />
         ) : (
-          <table className="data-table">
+          <div className="overflow-x-auto"><table className="data-table">
             <thead><tr><th>Worker</th><th>Nationality</th><th>Employer</th><th>Exam Date</th><th>Result</th><th>Actions</th></tr></thead>
             <tbody>
               {filtered.map(w => {
@@ -122,7 +122,7 @@ export default function FomemaPage() {
                 )
               })}
             </tbody>
-          </table>
+          </table></div>
         )}
       </div>
 

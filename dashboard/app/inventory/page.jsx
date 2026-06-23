@@ -108,7 +108,7 @@ export default function InventoryPage() {
             {filtered.length === 0 ? (
               <EmptyState icon={Package} title="No items" description="Add inventory items to get started" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Item</th><th>Category</th><th>Stock</th><th>Reorder Level</th><th>Selling Price</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
                   {filtered.map(item => (
@@ -138,7 +138,7 @@ export default function InventoryPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}
@@ -148,7 +148,7 @@ export default function InventoryPage() {
             {lowStock.length === 0 ? (
               <EmptyState icon={Package} title="All stock levels are healthy" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Item</th><th>Current Stock</th><th>Reorder Level</th><th>Deficit</th></tr></thead>
                 <tbody>
                   {lowStock.map(item => (
@@ -160,7 +160,7 @@ export default function InventoryPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}
@@ -170,7 +170,7 @@ export default function InventoryPage() {
             {expiry.length === 0 ? (
               <EmptyState icon={Package} title="No expiring batches" description="Batches expiring within 30 days will appear here" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Item</th><th>Batch</th><th>Quantity</th><th>Expiry Date</th><th>Days Left</th></tr></thead>
                 <tbody>
                   {expiry.map(b => {
@@ -186,7 +186,7 @@ export default function InventoryPage() {
                     )
                   })}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}
@@ -196,7 +196,7 @@ export default function InventoryPage() {
             {orders.length === 0 ? (
               <EmptyState icon={Truck} title="No purchase orders" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>PO Number</th><th>Supplier</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
                 <tbody>
                   {orders.map(po => (
@@ -210,7 +210,7 @@ export default function InventoryPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}
@@ -220,7 +220,7 @@ export default function InventoryPage() {
             {suppliers.length === 0 ? (
               <EmptyState icon={Truck} title="No suppliers" description="Add your pharmaceutical suppliers" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Supplier</th><th>Contact</th><th>Email</th><th>Phone</th></tr></thead>
                 <tbody>
                   {suppliers.map(s => (
@@ -232,7 +232,7 @@ export default function InventoryPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}

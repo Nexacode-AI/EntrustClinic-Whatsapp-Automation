@@ -66,7 +66,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* P&L summary */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div className="stat-card">
           <div><p className="stat-value text-base">RM {parseFloat(pl.revenue || 0).toFixed(2)}</p><p className="stat-label">Revenue</p></div>
           <div className="stat-icon-wrap bg-success-light"><TrendingUp size={18} className="text-success-dark" /></div>
@@ -93,7 +93,7 @@ export default function ExpensesPage() {
           {expenses.length === 0 ? (
             <EmptyState icon={Receipt} title="No expenses" description="Add expenses to track clinic overhead" action={<button onClick={() => setAddOpen(true)} className="btn-primary btn-sm"><Plus size={13} /> Add Expense</button>} />
           ) : (
-            <table className="data-table">
+            <div className="overflow-x-auto"><table className="data-table">
               <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Vendor</th><th>Amount</th><th></th></tr></thead>
               <tbody>
                 {expenses.map(e => (
@@ -111,7 +111,7 @@ export default function ExpensesPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           )}
         </div>
 

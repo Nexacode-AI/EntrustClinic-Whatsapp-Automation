@@ -67,7 +67,7 @@ export default function PanelPage() {
             {panels.length === 0 ? (
               <EmptyState icon={Building2} title="No panel companies" description="Add corporate panel companies to enable panel billing" action={<button onClick={() => setAddOpen(true)} className="btn-primary btn-sm"><Plus size={13} /> Add Panel</button>} />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Company</th><th>Contact</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead>
                 <tbody>
                   {panels.map(p => (
@@ -80,7 +80,7 @@ export default function PanelPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}
@@ -90,7 +90,7 @@ export default function PanelPage() {
             {claims.length === 0 ? (
               <EmptyState icon={FileText} title="No claims" description="Panel claims will appear here when panel invoices are created" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Claim Ref</th><th>Patient</th><th>Panel</th><th>Amount</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead>
                 <tbody>
                   {claims.map(c => (
@@ -112,7 +112,7 @@ export default function PanelPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}
@@ -123,7 +123,7 @@ export default function PanelPage() {
               <h3 className="font-semibold text-ink">Accounts Receivable Aging</h3>
               <span className="text-sm font-bold text-ink">Total Outstanding: <span className="text-brand">RM {parseFloat(totalOutstanding).toFixed(2)}</span></span>
             </div>
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: 'Current (<30 days)', key: '<30', color: 'bg-success-light border-success/20 text-success-dark' },
                 { label: '30–60 days', key: '30-60', color: 'bg-warning-light border-warning/20 text-warning-dark' },

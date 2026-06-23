@@ -329,7 +329,7 @@ function VitalsTab({ patientId, consultId }) {
       {vitals.length > 1 && (
         <div>
           <h3 className="text-sm font-semibold text-ink mb-2">History</h3>
-          <table className="data-table">
+          <div className="overflow-x-auto"><table className="data-table">
             <thead><tr><th>Date</th><th>BP</th><th>HR</th><th>Temp</th><th>SpO2</th><th>Weight</th></tr></thead>
             <tbody>
               {vitals.slice(1).map((v, i) => (
@@ -343,7 +343,7 @@ function VitalsTab({ patientId, consultId }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 

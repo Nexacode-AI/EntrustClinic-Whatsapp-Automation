@@ -9,7 +9,7 @@ import {
   BarChart3,
   MessageSquare, AlertTriangle, Megaphone,
   UserCog, Stethoscope, Calendar, ClipboardList, Ban, Star, FileSignature, Settings,
-  Activity, LogOut, ChevronRight,
+  Activity, LogOut, ChevronRight, X,
 } from 'lucide-react'
 
 const NAV_GROUPS = [
@@ -70,13 +70,13 @@ const NAV_GROUPS = [
   {
     label: 'Admin',
     items: [
-      { href: '/staff',    label: 'Staff',         icon: UserCog },
-      { href: '/doctors',  label: 'Doctors',       icon: Stethoscope },
-      { href: '/schedule', label: 'Schedule',      icon: Calendar },
-      { href: '/services', label: 'Services',      icon: ClipboardList },
-      { href: '/block-dates', label: 'Block Dates', icon: Ban },
-      { href: '/consent',  label: 'Consent Forms', icon: FileSignature },
-      { href: '/settings', label: 'Settings',      icon: Settings },
+      { href: '/staff',       label: 'Staff',         icon: UserCog },
+      { href: '/doctors',     label: 'Doctors',       icon: Stethoscope },
+      { href: '/schedule',    label: 'Schedule',      icon: Calendar },
+      { href: '/services',    label: 'Services',      icon: ClipboardList },
+      { href: '/block-dates', label: 'Block Dates',   icon: Ban },
+      { href: '/consent',     label: 'Consent Forms', icon: FileSignature },
+      { href: '/settings',    label: 'Settings',      icon: Settings },
     ],
   },
 ]
@@ -94,7 +94,7 @@ function NavItem({ href, label, Icon, active }) {
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }) {
   const path   = usePathname()
   const router = useRouter()
 
@@ -105,17 +105,32 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-60 shrink-0 flex flex-col h-screen bg-sidebar border-r border-white/8 overflow-hidden">
+    <aside className={`
+      fixed inset-y-0 left-0 z-50
+      lg:relative lg:z-auto lg:translate-x-0
+      w-60 shrink-0 flex flex-col h-screen
+      bg-sidebar border-r border-white/8 overflow-hidden
+      transition-transform duration-300 ease-in-out
+      ${open ? 'translate-x-0' : '-translate-x-full'}
+    `}>
       {/* Brand */}
       <div className="px-5 py-4 border-b border-white/8 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-brand flex items-center justify-center shadow-sm flex-shrink-0">
             <Activity size={15} className="text-white" strokeWidth={2.5} />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-white leading-tight truncate">Entrust Clinic</p>
             <p className="text-slate-500 mt-0.5 text-2xs">Management System</p>
           </div>
+          {/* Close button — mobile only */}
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all flex-shrink-0"
+            aria-label="Close menu"
+          >
+            <X size={16} />
+          </button>
         </div>
       </div>
 

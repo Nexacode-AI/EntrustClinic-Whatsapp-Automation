@@ -118,7 +118,7 @@ export default function PackagesPage() {
             <label className="form-label">Description</label>
             <textarea className="form-textarea" rows={2} value={planForm.description} onChange={e => setPlanForm(f => ({ ...f, description: e.target.value }))} />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="form-group">
               <label className="form-label">Sessions</label>
               <input type="number" className="form-input" min={1} value={planForm.total_sessions} onChange={e => setPlanForm(f => ({ ...f, total_sessions: e.target.value }))} />

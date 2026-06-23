@@ -111,7 +111,7 @@ export default function ConsentPage() {
             {consents.length === 0 ? (
               <EmptyState icon={FileText} title="No consent records" description="Recorded patient consents will appear here" />
             ) : (
-              <table className="data-table">
+              <div className="overflow-x-auto"><table className="data-table">
                 <thead><tr><th>Patient</th><th>Consent Type</th><th>Signed At</th><th>Signed By</th><th>Witness</th></tr></thead>
                 <tbody>
                   {consents.map(c => (
@@ -124,7 +124,7 @@ export default function ConsentPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             )}
           </div>
         )}

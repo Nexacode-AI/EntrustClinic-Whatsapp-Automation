@@ -64,9 +64,9 @@ export default function PayrollPage() {
         <button onClick={() => setGenOpen(true)} className="btn-primary btn-sm"><Plus size={14} /> Generate Payroll</button>
       </div>
 
-      <div className="flex gap-4 h-[calc(100vh-var(--header-h)-10rem)]">
+      <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100vh-var(--header-h)-10rem)]">
         {/* Runs list */}
-        <div className="w-72 flex-shrink-0 card overflow-hidden flex flex-col">
+        <div className="w-full lg:w-72 flex-shrink-0 card overflow-hidden flex flex-col max-h-60 lg:max-h-full">
           <div className="card-header"><span className="card-title text-sm">Payroll Runs</span></div>
           <div className="overflow-y-auto flex-1 p-2 space-y-1.5">
             {runs.length === 0 ? (
@@ -104,7 +104,7 @@ export default function PayrollPage() {
 
               {/* Summary row */}
               {runDetail && (
-                <div className="grid grid-cols-4 gap-3 p-4 border-b border-border">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-4 border-b border-border">
                   {[
                     { label: 'Total Gross', value: `RM ${parseFloat(runDetail.total_gross || 0).toFixed(2)}`, color: 'text-ink' },
                     { label: 'EPF (Employer 13%)', value: `RM ${parseFloat(runDetail.total_epf_employer || 0).toFixed(2)}`, color: 'text-brand' },
@@ -123,7 +123,7 @@ export default function PayrollPage() {
                 {(runDetail?.payroll_items || []).length === 0 ? (
                   <EmptyState icon={FileText} title="No payroll items" />
                 ) : (
-                  <table className="data-table">
+                  <div className="overflow-x-auto"><table className="data-table">
                     <thead>
                       <tr>
                         <th>Staff</th>
@@ -155,7 +155,7 @@ export default function PayrollPage() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                  </table></div>
                 )}
               </div>
             </>
